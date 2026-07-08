@@ -1,0 +1,23 @@
+# Secrets
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# Uploads (données utilisateur, non versionnées)
+backend/uploads/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Composer
+backend/vendor/
+
+# Logs
+*.log
+
+# WAMP
+*.bak
+
+# Outils tiers (non liés au projet)
+.kilo/

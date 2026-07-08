@@ -1,0 +1,17 @@
+# ── Sécurité & CORS ────────────────────────────────────────────
+# Gérés exclusivement en PHP (setSecurityHeaders() dans middleware/auth.php)
+# pour éviter les doublons de headers (Access-Control-Allow-Origin
+# dupliqué = rejeté par le navigateur en CORS).
+
+# ── Authorization header ────────────────────────────────────────
+# mod_fcgid (WAMP) ne transmet pas le header Authorization à PHP par
+# défaut : on le force explicitement dans $_SERVER['HTTP_AUTHORIZATION'].
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+# ── Sécurité fichiers ─────────────────────────────────────────
+# Bloquer l'accès direct aux fichiers de config
+<FilesMatch "^(database|jwt)\.php$">
+    Require all denied
+</FilesMatch>

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(npm run *)",
+      "Bash(tasklist)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //F //PID 8368)",
+      "Bash(echo \"exit3=$?\")",
+      "Bash(echo \"exit5=$?\")"
+    ]
+  }
+}
