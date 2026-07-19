@@ -5,6 +5,8 @@ const BEAN_BASE   = [107, 66, 38]    // #6B4226
 const CHOCO_BASE  = [42, 21, 9]      // #2A1509
 // Tons variés pour les mini-fèves flottantes (orange cabosse, brun fève, chocolat)
 const PARTICLE_COLORS = ['#D4641A', '#8B5E34', '#3D2314']
+// Seuil de largeur (px) sous lequel on bascule sur la version mobile (moins de fèves/particules)
+const MOBILE_BREAKPOINT = 768
 
 function rand(min, max) { return Math.random() * (max - min) + min }
 function lerp(a, b, t) { return a + (b - a) * t }
@@ -15,7 +17,7 @@ function lerpColor(c1, c2, t) {
   return `rgb(${r},${g},${b})`
 }
 
-function roundRectPath(ctx, x, y, w, h, r) {
+function roundRectPath(ctx, { x, y, w, h, r }) {
   const radius = Math.min(r, w / 2, h / 2)
   ctx.beginPath()
   ctx.moveTo(x + radius, y)
@@ -42,7 +44,7 @@ export default function CacaoCanvas({ className = '' }) {
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const isTouch = window.matchMedia('(hover: none)').matches
-    const isMobile = window.innerWidth < 768
+    const isMobile = window.innerWidth < MOBILE_BREAKPOINT
 
     const beanCount = isMobile ? 6 : 12
     // Mini-fèves flottantes : plus nombreuses pour un effet plus vivant,
@@ -127,12 +129,12 @@ export default function CacaoCanvas({ className = '' }) {
       ctx.rotate(rotation)
       ctx.globalAlpha = b.opacity
 
-      roundRectPath(ctx, -w / 2, -h / 2, w, h, radius)
+      roundRectPath(ctx, { x: -w / 2, y: -h / 2, w, h, r: radius })
       ctx.fillStyle = color
       ctx.fill()
 
       // reflet
-      roundRectPath(ctx, -w / 2 + w * 0.16, -h / 2 + h * 0.14, w * 0.32, h * 0.22, radius * 0.5)
+      roundRectPath(ctx, { x: -w / 2 + w * 0.16, y: -h / 2 + h * 0.14, w: w * 0.32, h: h * 0.22, r: radius * 0.5 })
       ctx.fillStyle = localMorph > 0.4
         ? `rgba(232,118,42,${0.18 + localMorph * 0.12})`
         : 'rgba(255,255,255,0.10)'

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
+  Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { useAuth } from '../../hooks/useAuth'
 import { useAuthContext } from '../../context/AuthContext'

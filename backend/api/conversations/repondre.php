@@ -100,22 +100,18 @@ try {
     } else {
         $nomExp = trim(($auth['prenom'] ?? '') . ' ' . ($auth['nom'] ?? '')) ?: 'Un producteur';
         creerNotification($pdo, 'message', "Réponse de $nomExp dans : {$conv['sujet']}", '/admin/messages');
-        // E-mail à l'admin
-        $q = $pdo->prepare("SELECT email FROM admin ORDER BY id ASC LIMIT 1");
-        $q->execute();
-        if ($adm = $q->fetch()) {
-            envoyerMail(
-                $adm['email'],
-                "Nouveau message producteur — {$conv['sujet']}",
-                "<p><strong>$nomExp</strong> a répondu dans la conversation
-                    « <strong>{$conv['sujet']}</strong> » :</p>
-                 <blockquote style=\"border-left:3px solid #D4641A;margin:14px 0;
-                    padding:10px 16px;background:#FAF7F0;border-radius:0 6px 6px 0;\">$extrait</blockquote>
-                 <p>Merci de prendre connaissance de ce message dans les meilleurs délais.</p>",
-                'NOUVEAU MESSAGE',
-                ['label' => 'Répondre au message', 'url' => siteUrl('/admin/messages')]
-            );
-        }
+        // E-mail à tous les administrateurs
+        notifierTousLesAdmins(
+            $pdo,
+            "Nouveau message producteur — {$conv['sujet']}",
+            "<p><strong>$nomExp</strong> a répondu dans la conversation
+                « <strong>{$conv['sujet']}</strong> » :</p>
+             <blockquote style=\"border-left:3px solid #D4641A;margin:14px 0;
+                padding:10px 16px;background:#FAF7F0;border-radius:0 6px 6px 0;\">$extrait</blockquote>
+             <p>Merci de prendre connaissance de ce message dans les meilleurs délais.</p>",
+            'NOUVEAU MESSAGE',
+            ['label' => 'Répondre au message', 'url' => siteUrl('/admin/messages')]
+        );
     }
 
     echo json_encode(['success' => true, 'id' => $msgId]);

@@ -31,6 +31,24 @@ function chargerEnv(): void
     }
 }
 
+/**
+ * Envoie un e-mail à TOUS les administrateurs (pas seulement le premier).
+ * À utiliser pour toute notification qui concerne l'équipe admin dans son
+ * ensemble (nouvelle inscription, nouveau message producteur, etc.).
+ */
+function notifierTousLesAdmins(
+    PDO $pdo,
+    string $sujet,
+    string $corpsHtml,
+    ?string $eyebrow = null,
+    ?array $cta = null
+): void {
+    $admins = $pdo->query("SELECT email FROM admin WHERE email IS NOT NULL")->fetchAll();
+    foreach ($admins as $adm) {
+        envoyerMail($adm['email'], $sujet, $corpsHtml, $eyebrow, $cta);
+    }
+}
+
 /** URL publique du site (pour construire les liens dans les e-mails). */
 function siteUrl(string $chemin = ''): string
 {
@@ -89,16 +107,17 @@ function envoyerMail(
         $mail->isHTML(true);
         $mail->Subject = $sujet;
 
-        // Logo intégré en pièce jointe inline (CID) : fonctionne même en
-        // local, contrairement à une URL http://localhost/... que les
-        // clients mail bloquent systématiquement.
+        // Logo encodé en base64 directement dans le HTML (data URI) : contrairement
+        // à une image jointe en CID, Gmail ne le détache jamais en pièce jointe
+        // affichée en bas du message — c'est un vrai bloc HTML inline, fiable
+        // sur tous les clients mail sans dépendre d'une URL publique.
         $logoPath = __DIR__ . '/../../frontend/public/logo/cape_logo_new.png';
-        $logoCid  = 'capedig_logo';
+        $logoDataUri = null;
         if (file_exists($logoPath)) {
-            $mail->addEmbeddedImage($logoPath, $logoCid, 'logo.png');
+            $logoDataUri = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
         }
 
-        $mail->Body    = gabaritMail($sujet, $corpsHtml, file_exists($logoPath) ? $logoCid : null, $eyebrow, $cta);
+        $mail->Body    = gabaritMail($sujet, $corpsHtml, $logoDataUri, $eyebrow, $cta);
         $mail->AltBody = strip_tags($corpsHtml) . ($cta ? "\n\n{$cta['label']} : {$cta['url']}" : '');
 
         $mail->send();
@@ -113,15 +132,15 @@ function envoyerMail(
 function gabaritMail(
     string $titre,
     string $contenu,
-    ?string $logoCid = null,
+    ?string $logoDataUri = null,
     ?string $eyebrow = null,
     ?array $cta = null
 ): string {
     $annee   = date('Y');
     $siteUrl = siteUrl();
 
-    $logoHtml = $logoCid
-        ? "<img src=\"cid:$logoCid\" alt=\"CAPEDIG-COOP CA\" width=\"38\" height=\"38\"
+    $logoHtml = $logoDataUri
+        ? "<img src=\"$logoDataUri\" alt=\"CAPEDIG-COOP CA\" width=\"38\" height=\"38\"
                 style=\"display:block;border-radius:8px;background:#fff;padding:3px;\">"
         : '';
 
@@ -154,15 +173,17 @@ function gabaritMail(
   <div style="max-width:560px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;
               border:1px solid #E8DFD0;">
     <div style="background:#D4641A;padding:18px 28px;">
-      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-        <td style="vertical-align:middle;padding-right:12px;">$logoHtml</td>
-        <td style="vertical-align:middle;">
-          <p style="margin:0;color:#fff;font-size:17px;font-weight:bold;">CAPEDIG-COOP CA</p>
-          <p style="margin:1px 0 0;color:rgba(255,255,255,0.85);font-size:11.5px;">
-            Coopérative Agricole de Production et de Digitalisation
-          </p>
-        </td>
-      </tr></table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td width="46" valign="middle" style="width:46px;padding-right:12px;">$logoHtml</td>
+          <td valign="middle">
+            <p style="margin:0;color:#fff;font-size:17px;font-weight:bold;">CAPEDIG-COOP CA</p>
+            <p style="margin:1px 0 0;color:rgba(255,255,255,0.85);font-size:11.5px;">
+              Coopérative Agricole de Production et de Digitalisation
+            </p>
+          </td>
+        </tr>
+      </table>
     </div>
     <div style="padding:30px 28px 26px;">
       $eyebrowHtml

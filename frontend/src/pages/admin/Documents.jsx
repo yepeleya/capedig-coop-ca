@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
+import ConfirmDialog from '../../components/admin/ConfirmDialog'
 import { api } from '../../services/api'
 
 const CATEGORIES_SUGGESTIONS = ['Général', 'Guides techniques', 'Statuts', 'Rapports financiers', 'Formulaires']
@@ -131,6 +132,7 @@ export default function Documents() {
   const [modal, setModal] = useState(null) // null | 'new' | objet à éditer
   const [msgSuccess, setMsgSuccess] = useState('')
   const [msgError, setMsgError] = useState('')
+  const [aSupprimer, setASupprimer] = useState(null)
 
   const flash = (setter, text) => { setter(text); setTimeout(() => setter(''), 4000) }
 
@@ -159,8 +161,11 @@ export default function Documents() {
     charger()
   }
 
-  const handleDelete = async (d) => {
-    if (!confirm(`Supprimer le document "${d.titre}" ?`)) return
+  const handleDelete = (d) => setASupprimer(d)
+
+  const confirmerSuppression = async () => {
+    const d = aSupprimer
+    setASupprimer(null)
     try {
       await api.del('documents/supprimer.php', { id: d.id })
       flash(setMsgSuccess, 'Document supprimé.')
@@ -284,6 +289,16 @@ export default function Documents() {
           onSave={handleSave}
         />
       )}
+
+      <ConfirmDialog
+        open={!!aSupprimer}
+        danger
+        title="Supprimer le document"
+        message={aSupprimer ? `Supprimer le document "${aSupprimer.titre}" ?` : ''}
+        confirmLabel="Supprimer"
+        onConfirm={confirmerSuppression}
+        onCancel={() => setASupprimer(null)}
+      />
     </div>
   )
 }

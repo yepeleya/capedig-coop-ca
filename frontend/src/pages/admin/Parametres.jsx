@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useAuthContext } from '../../context/AuthContext'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
+import ConfirmDialog from '../../components/admin/ConfirmDialog'
 import { api } from '../../services/api'
 
 const SECTIONS = [
@@ -31,7 +32,7 @@ export default function Parametres() {
   const handleSaveProfil = async (e) => {
     e.preventDefault()
     try {
-      const res = await api.post('admin/update_profil.php', profil)
+      await api.post('admin/update_profil.php', profil)
       flash(setMsgSuccess, 'Profil mis à jour avec succès.')
       login(token, { ...user, nom: profil.nom, prenom: profil.prenom, email: profil.email })
     } catch (err) {
@@ -101,8 +102,13 @@ export default function Parametres() {
     }
   }
 
-  const handleDeleteAdmin = async (a) => {
-    if (!confirm(`Supprimer le compte administrateur de ${a.prenom} ${a.nom} ?`)) return
+  const [adminASupprimer, setAdminASupprimer] = useState(null)
+
+  const handleDeleteAdmin = (a) => setAdminASupprimer(a)
+
+  const confirmerDeleteAdmin = async () => {
+    const a = adminASupprimer
+    setAdminASupprimer(null)
     try {
       await api.del('admin/supprimer_admin.php', { id: a.id })
       flash(setMsgSuccess, 'Administrateur supprimé.')
@@ -358,6 +364,16 @@ export default function Parametres() {
           </div>
         </main>
       </div>
+
+      <ConfirmDialog
+        open={!!adminASupprimer}
+        danger
+        title="Supprimer l'administrateur"
+        message={adminASupprimer ? `Supprimer le compte administrateur de ${adminASupprimer.prenom} ${adminASupprimer.nom} ?` : ''}
+        confirmLabel="Supprimer"
+        onConfirm={confirmerDeleteAdmin}
+        onCancel={() => setAdminASupprimer(null)}
+      />
     </div>
   )
 }

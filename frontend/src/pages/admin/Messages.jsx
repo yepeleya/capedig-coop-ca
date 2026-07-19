@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
+import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
+import ConfirmDialog from '../../components/admin/ConfirmDialog'
 import { api } from '../../services/api'
 
 // ── helpers ───────────────────────────────────────────────────
@@ -33,6 +35,12 @@ function dateHeure(dateStr) {
 
 function nomProducteur(conv) {
   return [conv.prd_prenom, conv.prd_nom].filter(Boolean).join(' ') || 'Producteur'
+}
+
+function formatDuree(s) {
+  const m = Math.floor(s / 60)
+  const sec = s % 60
+  return `${m}:${String(sec).padStart(2, '0')}`
 }
 
 // ── Colonne gauche : item conversation ────────────────────────
@@ -83,6 +91,18 @@ function ConvItem({ conv, selected, onClick }) {
   )
 }
 
+// ── Lecteur audio compact pour les notes vocales ────────────────
+function AudioPlayer({ src, light }) {
+  return (
+    <audio
+      controls
+      src={src}
+      className={light ? 'voice-player voice-player-light' : 'voice-player'}
+      style={{ height: '34px', maxWidth: '220px' }}
+    />
+  )
+}
+
 // ── Bulle de message ──────────────────────────────────────────
 function Bubble({ msg, prdNom }) {
   const isAdminMsg = msg.expediteur_type === 'admin'
@@ -108,7 +128,11 @@ function Bubble({ msg, prdNom }) {
                          ${isAdminMsg
                            ? 'bg-capedig-orange text-white rounded-br-sm'
                            : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
-          <p className="whitespace-pre-line">{msg.contenu}</p>
+          {msg.audio ? (
+            <AudioPlayer src={`/uploads/${msg.audio}`} light={isAdminMsg} />
+          ) : (
+            <p className="whitespace-pre-line">{msg.contenu}</p>
+          )}
           <p className={`text-[10.5px] mt-1 text-right
                          ${isAdminMsg ? 'text-white/70' : 'text-gray-400'}`}>
             {dateHeure(msg.created_at)}
@@ -144,6 +168,7 @@ export default function Messages() {
   const [reply,   setReply]   = useState('')
   const [sending, setSending] = useState(false)
   const [msgErr,  setMsgErr]  = useState('')
+  const [confirmCloture, setConfirmCloture] = useState(false)
 
   const [listError, setListError] = useState('')
 
@@ -262,10 +287,46 @@ export default function Messages() {
     }
   }
 
-  // Clôturer la conversation
-  const handleCloturer = async () => {
+  // Envoyer une note vocale
+  const handleAudioReady = async (blob, mimeType) => {
     if (!selectedConv) return
-    if (!confirm('Clôturer cette conversation ? Le producteur ne pourra plus y répondre.')) return
+    setSending(true)
+    setMsgErr('')
+    try {
+      const ext = mimeType.includes('ogg') ? 'ogg' : 'webm'
+      const fd = new FormData()
+      fd.append('conversation_id', selectedConv.id)
+      fd.append('audio', blob, `note.${ext}`)
+      const res = await api.postForm('conversations/envoyer_audio.php', fd)
+      setChatMessages(prev => [...prev, {
+        id: res.id,
+        audio: res.audio,
+        expediteur_type: 'admin',
+        lu: 0,
+        created_at: new Date().toISOString(),
+      }])
+      setConversations(prev =>
+        prev.map(c => c.id === selectedConv.id
+          ? { ...c, dernier_message: '🎤 Note vocale', dernier_expediteur: 'admin', updated_at: new Date().toISOString() }
+          : c)
+      )
+      window.dispatchEvent(new Event('capedig:messages-updated'))
+    } catch (e) {
+      setMsgErr(e.message || "Erreur lors de l'envoi de la note vocale")
+    } finally {
+      setSending(false)
+    }
+  }
+  const voice = useVoiceRecorder(handleAudioReady)
+
+  // Clôturer la conversation
+  const handleCloturer = () => {
+    if (!selectedConv) return
+    setConfirmCloture(true)
+  }
+
+  const confirmerCloture = async () => {
+    setConfirmCloture(false)
     try {
       await api.post('conversations/cloturer.php', { id: selectedConv.id })
       setSelectedConv(prev => ({ ...prev, statut: 'close' }))
@@ -428,10 +489,33 @@ export default function Messages() {
                   {msgErr && (
                     <p className="text-red-500 text-[12.5px] mb-2">✗ {msgErr}</p>
                   )}
+                  {voice.erreur && (
+                    <p className="text-red-500 text-[12.5px] mb-2">✗ {voice.erreur}</p>
+                  )}
                   {conv.statut === 'close' ? (
                     <p className="text-center text-gray-400 text-[13px] py-2">
                       Cette conversation est clôturée — impossible de répondre.
                     </p>
+                  ) : voice.recording ? (
+                    <div className="flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"
+                            style={{ animation: 'pulse 1.2s ease infinite' }} />
+                      <span className="text-[13.5px] font-semibold text-red-600 flex-1">
+                        Enregistrement… {formatDuree(voice.seconds)}
+                      </span>
+                      <button onClick={voice.cancel}
+                        className="text-[12.5px] font-semibold text-gray-500 hover:text-gray-700 px-2">
+                        Annuler
+                      </button>
+                      <button onClick={voice.stop}
+                        className="btn-shine w-10 h-10 rounded-full bg-red-500 text-white
+                                   flex items-center justify-center flex-shrink-0
+                                   hover:bg-red-600 transition-colors">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <rect x="6" y="6" width="12" height="12" rx="2" />
+                        </svg>
+                      </button>
+                    </div>
                   ) : (
                     <div className="flex items-end gap-3">
                       <textarea
@@ -455,26 +539,44 @@ export default function Messages() {
                           e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px'
                         }}
                       />
-                      <button
-                        onClick={handleReply}
-                        disabled={sending || !reply.trim()}
-                        className="btn-shine w-10 h-10 rounded-full bg-capedig-orange text-white
-                                   flex items-center justify-center flex-shrink-0
-                                   disabled:opacity-40 hover:bg-capedig-orange-light transition-colors"
-                      >
-                        {sending ? (
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10"
-                                    stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      {reply.trim() ? (
+                        <button
+                          onClick={handleReply}
+                          disabled={sending}
+                          className="btn-shine w-10 h-10 rounded-full bg-capedig-orange text-white
+                                     flex items-center justify-center flex-shrink-0
+                                     disabled:opacity-40 hover:bg-capedig-orange-light transition-colors"
+                        >
+                          {sending ? (
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10"
+                                      stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                            </svg>
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={voice.start}
+                          disabled={sending}
+                          title="Enregistrer une note vocale"
+                          className="w-10 h-10 rounded-full bg-gray-100 text-gray-600
+                                     flex items-center justify-center flex-shrink-0
+                                     disabled:opacity-40 hover:bg-gray-200 transition-colors"
+                        >
+                          <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                              d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                              d="M19 11a7 7 0 01-14 0M12 18v3" />
                           </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                          </svg>
-                        )}
-                      </button>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -493,6 +595,16 @@ export default function Messages() {
           </div>
         </main>
       </div>
+
+      <ConfirmDialog
+        open={confirmCloture}
+        danger
+        title="Clôturer la conversation"
+        message="Clôturer cette conversation ? Le producteur ne pourra plus y répondre."
+        confirmLabel="Clôturer"
+        onConfirm={confirmerCloture}
+        onCancel={() => setConfirmCloture(false)}
+      />
     </div>
   )
 }

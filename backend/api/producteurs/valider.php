@@ -24,9 +24,13 @@ if (!$id || !in_array($statut, ['actif', 'suspendu', 'en_attente'])) {
 try {
     $pdo = getConnection();
 
-    // Un compte ne peut être activé que si le producteur a confirmé son
-    // numéro par SMS — sinon la vérification téléphonique ne servirait à
-    // rien (n'importe quel numéro, même invalide, pourrait être validé).
+    // NOTE : la vérification obligatoire du téléphone par SMS est temporairement
+    // suspendue (crédit SMS non encore rechargé côté fournisseur). L'admin peut
+    // donc valider un compte même si tel_verifie = 0. Le badge « Téléphone non
+    // vérifié » reste affiché à titre informatif dans la liste des producteurs.
+    // → Pour réactiver le blocage strict une fois le crédit SMS disponible,
+    //   décommenter le contrôle ci-dessous.
+    /*
     if ($statut === 'actif') {
         $check = $pdo->prepare("SELECT tel_verifie FROM producteur WHERE id = ?");
         $check->execute([$id]);
@@ -45,6 +49,7 @@ try {
             exit;
         }
     }
+    */
 
     $stmt = $pdo->prepare("UPDATE producteur SET statut = ? WHERE id = ?");
     $stmt->execute([$statut, $id]);

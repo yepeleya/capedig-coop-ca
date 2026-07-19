@@ -21,6 +21,18 @@ if (!$convId) {
 
 try {
     $pdo = getConnection();
+
+    // Un producteur ne peut clôturer que sa propre conversation
+    if ($auth['type'] === 'producteur') {
+        $check = $pdo->prepare("SELECT id FROM conversation WHERE id = ? AND producteur_id = ?");
+        $check->execute([$convId, $auth['id']]);
+        if (!$check->fetch()) {
+            http_response_code(403);
+            echo json_encode(['success' => false]);
+            exit;
+        }
+    }
+
     $pdo->prepare("UPDATE conversation SET statut = 'close', updated_at = NOW() WHERE id = ?")
         ->execute([$convId]);
     echo json_encode(['success' => true]);

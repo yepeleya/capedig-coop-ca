@@ -47,7 +47,7 @@ try {
 
     // Récupérer tous les messages du fil
     $stmtMsgs = $pdo->prepare("
-        SELECT id, contenu, expediteur_type, lu, created_at
+        SELECT id, contenu, audio, expediteur_type, lu, created_at
         FROM message
         WHERE conversation_id = ?
         ORDER BY created_at ASC
@@ -61,6 +61,17 @@ try {
         UPDATE message SET lu = 1
         WHERE conversation_id = ? AND expediteur_type = ? AND lu = 0
     ")->execute([$convId, $recipientType]);
+
+    // Les notifications de type message/réponse sont indépendantes des messages
+    // eux-mêmes (table à part) : les marquer aussi comme lues ici, sinon la
+    // cloche de notification reste bloquée même après lecture de la conversation.
+    $notifType       = $auth['type'] === 'producteur' ? 'producteur' : 'admin';
+    $notifDestinatId = $notifType === 'producteur' ? $auth['id'] : 1;
+    $pdo->prepare("
+        UPDATE notification SET lu = 1
+        WHERE destinataire_type = ? AND destinataire_id = ?
+          AND type IN ('message', 'reponse') AND lu = 0
+    ")->execute([$notifType, $notifDestinatId]);
 
     echo json_encode(['conversation' => $conv, 'messages' => $messages]);
 } catch (PDOException $e) {

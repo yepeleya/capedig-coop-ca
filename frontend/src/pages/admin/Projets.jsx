@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
+import ConfirmDialog from '../../components/admin/ConfirmDialog'
 import { api } from '../../services/api'
 
 const CATEGORIES = [
@@ -241,6 +242,7 @@ export default function Projets() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState(null)   // null | 'new' | projet
   const [erreur, setErreur]   = useState('')
+  const [aSupprimer, setASupprimer] = useState(null)
 
   const charger = () => {
     setLoading(true)
@@ -259,13 +261,16 @@ export default function Projets() {
     charger()
   }
 
-  const handleDelete = async (p) => {
-    if (!confirm(`Supprimer le projet "${p.titre}" ?`)) return
+  const handleDelete = (p) => setASupprimer(p)
+
+  const confirmerSuppression = async () => {
+    const p = aSupprimer
+    setASupprimer(null)
     try {
       await api.del(`projets/supprimer.php?id=${p.id}`)
       charger()
     } catch (e) {
-      alert(e.message)
+      setErreur(e.message)
     }
   }
 
@@ -369,6 +374,16 @@ export default function Projets() {
           onSave={handleSave}
         />
       )}
+
+      <ConfirmDialog
+        open={!!aSupprimer}
+        danger
+        title="Supprimer le projet"
+        message={aSupprimer ? `Supprimer le projet "${aSupprimer.titre}" ?` : ''}
+        confirmLabel="Supprimer"
+        onConfirm={confirmerSuppression}
+        onCancel={() => setASupprimer(null)}
+      />
     </div>
   )
 }

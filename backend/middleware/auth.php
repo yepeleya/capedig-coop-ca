@@ -79,8 +79,23 @@ function setSecurityHeaders(): void
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
 
-    // CORS
+    // CORS — origines de développement + APP_URL (backend/.env) en production
     $allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+    $appUrl = $_ENV['APP_URL'] ?? getenv('APP_URL');
+    if (!$appUrl) {
+        $envFile = __DIR__ . '/../.env';
+        if (file_exists($envFile)) {
+            foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+                if (str_starts_with(trim($line), 'APP_URL=')) {
+                    $appUrl = trim(substr(trim($line), strlen('APP_URL=')));
+                    break;
+                }
+            }
+        }
+    }
+    if ($appUrl) {
+        $allowedOrigins[] = rtrim($appUrl, '/');
+    }
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
     if (in_array($origin, $allowedOrigins, true)) {
         header("Access-Control-Allow-Origin: $origin");

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
+import ConfirmDialog from '../../components/admin/ConfirmDialog'
 import { api } from '../../services/api'
 
 const STATUT_LABEL = { actif: 'Actif', en_attente: 'En attente', suspendu: 'Suspendu' }
@@ -21,6 +22,7 @@ export default function Producteurs() {
   const [msgSuccess, setMsgSuccess] = useState('')
   const [msgError, setMsgError] = useState('')
   const [page, setPage] = useState(1)
+  const [confirmAction, setConfirmAction] = useState(null) // { type: 'suspendre'|'supprimer', producteur }
   const limit = 20
 
   const charger = () => {
@@ -51,8 +53,9 @@ export default function Producteurs() {
     }
   }
 
-  const handleSuspendre = async (p) => {
-    if (!confirm(`Confirmer la suspension du compte de ${p.nom} ${p.prenom} ?`)) return
+  const handleSuspendre = (p) => setConfirmAction({ type: 'suspendre', producteur: p })
+
+  const confirmerSuspendre = async (p) => {
     try {
       await api.post('producteurs/valider.php', { id: p.id, statut: 'suspendu' })
       flash(setMsgSuccess, `Le compte de ${p.nom} ${p.prenom} a été suspendu.`)
@@ -72,8 +75,9 @@ export default function Producteurs() {
     }
   }
 
-  const handleSupprimer = async (p) => {
-    if (!confirm(`Supprimer définitivement le compte de ${p.nom} ${p.prenom} ? Cette action est irréversible.`)) return
+  const handleSupprimer = (p) => setConfirmAction({ type: 'supprimer', producteur: p })
+
+  const confirmerSupprimer = async (p) => {
     try {
       await api.del('producteurs/supprimer.php', { id: p.id })
       flash(setMsgSuccess, `Le compte de ${p.nom} ${p.prenom} a été supprimé.`)
@@ -81,6 +85,13 @@ export default function Producteurs() {
     } catch (e) {
       flash(setMsgError, e.message)
     }
+  }
+
+  const handleConfirmAction = () => {
+    const { type, producteur } = confirmAction
+    setConfirmAction(null)
+    if (type === 'suspendre') confirmerSuspendre(producteur)
+    else confirmerSupprimer(producteur)
   }
 
   const handleExportCSV = () => {
@@ -223,14 +234,10 @@ export default function Producteurs() {
                           {p.statut === 'en_attente' && (
                             <button
                               onClick={() => handleValider(p)}
-                              disabled={!p.tel_verifie}
                               title={!p.tel_verifie
-                                ? "Le producteur doit d'abord confirmer son numéro par SMS"
+                                ? "Vérification SMS suspendue temporairement — validation possible sans confirmation du téléphone"
                                 : undefined}
-                              className={`text-[12.5px] font-semibold hover:underline
-                                         ${p.tel_verifie
-                                           ? 'text-capedig-vert'
-                                           : 'text-gray-300 cursor-not-allowed hover:no-underline'}`}
+                              className="text-[12.5px] font-semibold text-capedig-vert hover:underline"
                             >
                               Valider
                             </button>
@@ -303,6 +310,20 @@ export default function Producteurs() {
           </div>
         </main>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        danger={confirmAction?.type === 'supprimer'}
+        title={confirmAction?.type === 'supprimer' ? 'Supprimer le compte' : 'Suspendre le compte'}
+        message={confirmAction ? (
+          confirmAction.type === 'supprimer'
+            ? `Supprimer définitivement le compte de ${confirmAction.producteur.nom} ${confirmAction.producteur.prenom} ? Cette action est irréversible.`
+            : `Confirmer la suspension du compte de ${confirmAction.producteur.nom} ${confirmAction.producteur.prenom} ?`
+        ) : ''}
+        confirmLabel={confirmAction?.type === 'supprimer' ? 'Supprimer' : 'Suspendre'}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   )
 }

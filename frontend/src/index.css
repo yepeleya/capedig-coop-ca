@@ -49,6 +49,14 @@ body {
   0%   { transform: scale(1) translate(0, 0); }
   100% { transform: scale(1.12) translate(-1.5%, -1.5%); }
 }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+/* ── Lecteur audio compact (notes vocales messagerie) ─────────── */
+.voice-player { border-radius: 999px; }
+.voice-player-light { filter: invert(1) hue-rotate(180deg) brightness(1.6); }
 
 /* ═══════════════════════════════════════════════════════════ */
 /* SCROLL REVEAL — système global                             */

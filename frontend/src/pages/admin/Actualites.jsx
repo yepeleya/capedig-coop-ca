@@ -4,6 +4,7 @@ import { useLockBodyScroll } from '../../hooks/useLockBodyScroll'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
 import RichTextEditor from '../../components/admin/RichTextEditor'
+import ConfirmDialog from '../../components/admin/ConfirmDialog'
 import { api } from '../../services/api'
 
 const CATEGORIES = ['Certification', 'Récolte', 'Formation', 'Infrastructure', 'Marché', 'Autre']
@@ -207,6 +208,7 @@ export default function Actualites() {
   const [modal, setModal] = useState(null) // null | 'new' | objet à éditer
   const [msgSuccess, setMsgSuccess] = useState('')
   const [msgError, setMsgError] = useState('')
+  const [aSupprimer, setASupprimer] = useState(null)
 
   const charger = () => {
     setLoading(true)
@@ -229,8 +231,11 @@ export default function Actualites() {
     charger()
   }
 
-  const handleDelete = async (a) => {
-    if (!confirm(`Supprimer l'actualité "${a.titre}" ?`)) return
+  const handleDelete = (a) => setASupprimer(a)
+
+  const confirmerSuppression = async () => {
+    const a = aSupprimer
+    setASupprimer(null)
     try {
       await api.del('actualites/supprimer.php', { id: a.id })
       flash(setMsgSuccess, 'Actualité supprimée.')
@@ -396,6 +401,16 @@ export default function Actualites() {
           onSave={handleSave}
         />
       )}
+
+      <ConfirmDialog
+        open={!!aSupprimer}
+        danger
+        title="Supprimer l'actualité"
+        message={aSupprimer ? `Supprimer l'actualité "${aSupprimer.titre}" ?` : ''}
+        confirmLabel="Supprimer"
+        onConfirm={confirmerSuppression}
+        onCancel={() => setASupprimer(null)}
+      />
     </div>
   )
 }

@@ -12,6 +12,22 @@ $limit   = min(50, max(1, (int)($_GET['limit'] ?? 30)));
 try {
     $pdo = getConnection();
 
+    // Sous-requêtes communes aux deux profils — factorisées pour éviter la
+    // duplication entre la branche admin et la branche producteur.
+    $dernierMessageSql = "
+                (SELECT m2.contenu
+                 FROM message m2
+                 WHERE m2.conversation_id = c.id
+                 ORDER BY m2.created_at DESC LIMIT 1) AS dernier_message,
+                (SELECT m2.audio
+                 FROM message m2
+                 WHERE m2.conversation_id = c.id
+                 ORDER BY m2.created_at DESC LIMIT 1) AS dernier_audio,
+                (SELECT m3.expediteur_type
+                 FROM message m3
+                 WHERE m3.conversation_id = c.id
+                 ORDER BY m3.created_at DESC LIMIT 1) AS dernier_expediteur";
+
     if ($isAdmin) {
         $stmt = $pdo->prepare("
             SELECT
@@ -24,14 +40,7 @@ try {
                  WHERE m.conversation_id = c.id
                    AND m.lu = 0
                    AND m.expediteur_type = 'producteur') AS non_lus,
-                (SELECT m2.contenu
-                 FROM message m2
-                 WHERE m2.conversation_id = c.id
-                 ORDER BY m2.created_at DESC LIMIT 1) AS dernier_message,
-                (SELECT m3.expediteur_type
-                 FROM message m3
-                 WHERE m3.conversation_id = c.id
-                 ORDER BY m3.created_at DESC LIMIT 1) AS dernier_expediteur
+                $dernierMessageSql
             FROM conversation c
             JOIN producteur p ON c.producteur_id = p.id
             ORDER BY c.updated_at DESC
@@ -47,14 +56,7 @@ try {
                  WHERE m.conversation_id = c.id
                    AND m.lu = 0
                    AND m.expediteur_type = 'admin') AS non_lus,
-                (SELECT m2.contenu
-                 FROM message m2
-                 WHERE m2.conversation_id = c.id
-                 ORDER BY m2.created_at DESC LIMIT 1) AS dernier_message,
-                (SELECT m3.expediteur_type
-                 FROM message m3
-                 WHERE m3.conversation_id = c.id
-                 ORDER BY m3.created_at DESC LIMIT 1) AS dernier_expediteur
+                $dernierMessageSql
             FROM conversation c
             WHERE c.producteur_id = ?
             ORDER BY c.updated_at DESC
@@ -66,11 +68,16 @@ try {
     $conversations = $stmt->fetchAll();
 
     foreach ($conversations as &$c) {
-        $c['non_lus']        = (int)$c['non_lus'];
-        $c['dernier_message'] = mb_substr(strip_tags($c['dernier_message'] ?? ''), 0, 80);
-        if ($c['dernier_message'] && mb_strlen($c['dernier_message']) >= 80) {
-            $c['dernier_message'] .= '…';
+        $c['non_lus'] = (int)$c['non_lus'];
+        if (!empty($c['dernier_audio'])) {
+            $c['dernier_message'] = '🎤 Note vocale';
+        } else {
+            $c['dernier_message'] = mb_substr(strip_tags($c['dernier_message'] ?? ''), 0, 80);
+            if ($c['dernier_message'] && mb_strlen($c['dernier_message']) >= 80) {
+                $c['dernier_message'] .= '…';
+            }
         }
+        unset($c['dernier_audio']);
     }
 
     echo json_encode($conversations);

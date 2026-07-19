@@ -210,7 +210,7 @@ export default function Accueil() {
       {/* ════════════════════════════════════════════════════ */}
       <section
         className="relative hero-clip overflow-hidden"
-        style={{ minHeight: 'clamp(560px, 90vh, 920px)', paddingTop: '68px' }}
+        style={{ minHeight: 'clamp(560px, 100vh, 960px)', paddingTop: '68px' }}
       >
         {/* Slideshow d'images (cabosses, fèves, plantations) avec effet Ken Burns */}
         <HeroSlider onIndexChange={setSlideIndex} />
@@ -241,7 +241,7 @@ export default function Accueil() {
         {/* Contenu */}
         <div
           className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 flex items-center"
-          style={{ minHeight: 'calc(clamp(560px, 90vh, 920px) - 68px)' }}
+          style={{ minHeight: 'calc(clamp(560px, 100vh, 960px) - 68px)' }}
         >
           {/* `key` force le remount à chaque changement de slide, ce qui
               rejoue les animations d'entrée (badge, titre mot-par-mot,

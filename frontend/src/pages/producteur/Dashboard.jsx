@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useAuthContext } from '../../context/AuthContext'
+import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
 import { api } from '../../services/api'
 import { stripHtml } from '../../utils/richContent'
 
@@ -128,7 +129,11 @@ function NotificationBell({ onGoToMessagerie }) {
   useEffect(() => {
     charger()
     const interval = setInterval(charger, 30000)
-    return () => clearInterval(interval)
+    window.addEventListener('capedig:messages-updated', charger)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('capedig:messages-updated', charger)
+    }
   }, [])
 
   useEffect(() => {
@@ -145,8 +150,9 @@ function NotificationBell({ onGoToMessagerie }) {
       await api.post('notifications/marquer_lu.php', {})
       setNotifications(prev => prev.map(n => ({ ...n, lu: 1 })))
       setNonLues(0)
-    } catch {
-      // pas critique pour l'UX
+    } catch (err) {
+      // pas critique pour l'UX, mais on garde une trace pour le débogage
+      console.error('Marquage des notifications échoué :', err)
     }
   }
 
@@ -246,6 +252,12 @@ function dateHeure(dateStr) {
   if (isToday) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' · ' +
          d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatDuree(s) {
+  const m = Math.floor(s / 60)
+  const sec = s % 60
+  return `${m}:${String(sec).padStart(2, '0')}`
 }
 
 // ════════════════════════════════════════════════════════════
@@ -413,6 +425,7 @@ export default function DashboardProducteur() {
       .then(data => {
         setChatMessages(data.messages || [])
         setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, non_lus: 0 } : c))
+        window.dispatchEvent(new Event('capedig:messages-updated'))
       })
       .catch(() => {})
       .finally(() => setChatLoading(false))
@@ -469,6 +482,48 @@ export default function DashboardProducteur() {
       setReplySending(false)
     }
   }
+
+  const handleFermerConv = async () => {
+    if (!selectedConv) return
+    if (!confirm('Fermer cette discussion ? Vous ne pourrez plus y répondre.')) return
+    try {
+      await api.post('conversations/cloturer.php', { id: selectedConv.id })
+      setSelectedConv(prev => ({ ...prev, statut: 'close' }))
+      setConversations(prev => prev.map(c => c.id === selectedConv.id ? { ...c, statut: 'close' } : c))
+    } catch (e) {
+      setReplyErr(e.message || 'Erreur lors de la fermeture')
+    }
+  }
+
+  const handleAudioReady = async (blob, mimeType) => {
+    if (!selectedConv) return
+    setReplySending(true)
+    setReplyErr('')
+    try {
+      const ext = mimeType.includes('ogg') ? 'ogg' : 'webm'
+      const fd = new FormData()
+      fd.append('conversation_id', selectedConv.id)
+      fd.append('audio', blob, `note.${ext}`)
+      const res = await api.postForm('conversations/envoyer_audio.php', fd)
+      setChatMessages(prev => [...prev, {
+        id: res.id,
+        audio: res.audio,
+        expediteur_type: 'producteur',
+        lu: 0,
+        created_at: new Date().toISOString(),
+      }])
+      setConversations(prev => prev.map(c =>
+        c.id === selectedConv.id
+          ? { ...c, dernier_message: '🎤 Note vocale', dernier_expediteur: 'producteur', updated_at: new Date().toISOString() }
+          : c
+      ))
+    } catch (e) {
+      setReplyErr(e.message || "Erreur lors de l'envoi de la note vocale")
+    } finally {
+      setReplySending(false)
+    }
+  }
+  const voice = useVoiceRecorder(handleAudioReady)
 
   const handleCreerConv = async (e) => {
     e.preventDefault()
@@ -697,7 +752,7 @@ export default function DashboardProducteur() {
                       <EmptyState icon={ICONS.documents} text="Aucun document disponible pour le moment." />
                     </div>
                   ) : documents.slice(0, 4).map(doc => (
-                    <DocumentCard key={doc.id} doc={doc} />
+                    <DocumentCard key={doc.id} doc={doc} onTelecharger={handleTelecharger} />
                   ))}
                 </div>
               </div>
@@ -754,7 +809,7 @@ export default function DashboardProducteur() {
                   </div>
                 ) : documents
                     .filter(d => docCategorie === 'Toutes' || d.categorie === docCategorie)
-                    .map(doc => <DocumentCard key={doc.id} doc={doc} />)}
+                    .map(doc => <DocumentCard key={doc.id} doc={doc} onTelecharger={handleTelecharger} />)}
               </div>
             </div>
           )}
@@ -950,11 +1005,18 @@ export default function DashboardProducteur() {
                           </p>
                           <p className="text-[11.5px] text-gray-500 truncate">{selectedConv.sujet}</p>
                         </div>
-                        {selectedConv.statut === 'close' && (
+                        {selectedConv.statut === 'close' ? (
                           <span className="px-2.5 py-1 bg-gray-100 rounded-xl text-[11px]
                                            font-bold text-gray-500 flex-shrink-0">
                             Clôturée
                           </span>
+                        ) : (
+                          <button onClick={handleFermerConv}
+                            className="px-3 py-1.5 rounded-xl border border-gray-200 text-[11.5px]
+                                       font-semibold text-gray-600 hover:bg-red-50 hover:text-red-500
+                                       hover:border-red-200 transition-colors flex-shrink-0">
+                            Fermer la discussion
+                          </button>
                         )}
                       </div>
 
@@ -984,7 +1046,13 @@ export default function DashboardProducteur() {
                                                ${isMine
                                                  ? 'bg-capedig-orange text-white rounded-br-sm'
                                                  : 'bg-white text-gray-800 rounded-bl-sm shadow-sm'}`}>
-                                <p className="whitespace-pre-line">{msg.contenu}</p>
+                                {msg.audio ? (
+                                  <audio controls src={`/uploads/${msg.audio}`}
+                                    className={isMine ? 'voice-player voice-player-light' : 'voice-player'}
+                                    style={{ height: '34px', maxWidth: '220px' }} />
+                                ) : (
+                                  <p className="whitespace-pre-line">{msg.contenu}</p>
+                                )}
                                 <p className={`text-[10.5px] mt-1 text-right
                                                ${isMine ? 'text-white/70' : 'text-gray-400'}`}>
                                   {dateHeure(msg.created_at)}
@@ -1006,13 +1074,33 @@ export default function DashboardProducteur() {
 
                       {/* Zone de réponse */}
                       <div className="bg-white border-t border-capedig-beige-dark px-4 py-3 flex-shrink-0">
-                        {replyErr && (
-                          <p className="text-red-500 text-[12px] mb-2">✗ {replyErr}</p>
+                        {(replyErr || voice.erreur) && (
+                          <p className="text-red-500 text-[12px] mb-2">✗ {replyErr || voice.erreur}</p>
                         )}
                         {selectedConv.statut === 'close' ? (
                           <p className="text-center text-gray-400 text-[13px] py-2">
                             Conversation clôturée par l'administration.
                           </p>
+                        ) : voice.recording ? (
+                          <div className="flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"
+                                  style={{ animation: 'pulse 1.2s ease infinite' }} />
+                            <span className="text-[13.5px] font-semibold text-red-600 flex-1">
+                              Enregistrement… {formatDuree(voice.seconds)}
+                            </span>
+                            <button onClick={voice.cancel}
+                              className="text-[12.5px] font-semibold text-gray-500 hover:text-gray-700 px-2">
+                              Annuler
+                            </button>
+                            <button onClick={voice.stop}
+                              className="btn-shine w-10 h-10 rounded-full bg-red-500 text-white
+                                         flex items-center justify-center flex-shrink-0
+                                         hover:bg-red-600 transition-colors">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <rect x="6" y="6" width="12" height="12" rx="2" />
+                              </svg>
+                            </button>
+                          </div>
                         ) : (
                           <div className="flex items-end gap-3">
                             <textarea
@@ -1035,25 +1123,42 @@ export default function DashboardProducteur() {
                                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
                               }}
                             />
-                            <button
-                              onClick={handleReplyConv}
-                              disabled={replySending || !reply.trim()}
-                              className="btn-shine w-10 h-10 rounded-full bg-capedig-orange text-white
-                                         flex items-center justify-center flex-shrink-0
-                                         disabled:opacity-40 hover:bg-capedig-orange-light transition-colors">
-                              {replySending ? (
-                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10"
-                                          stroke="currentColor" strokeWidth="4" />
-                                  <path className="opacity-75" fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            {reply.trim() ? (
+                              <button
+                                onClick={handleReplyConv}
+                                disabled={replySending}
+                                className="btn-shine w-10 h-10 rounded-full bg-capedig-orange text-white
+                                           flex items-center justify-center flex-shrink-0
+                                           disabled:opacity-40 hover:bg-capedig-orange-light transition-colors">
+                                {replySending ? (
+                                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10"
+                                            stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor"
+                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                                  </svg>
+                                )}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={voice.start}
+                                disabled={replySending}
+                                title="Enregistrer une note vocale"
+                                className="w-10 h-10 rounded-full bg-gray-100 text-gray-600
+                                           flex items-center justify-center flex-shrink-0
+                                           disabled:opacity-40 hover:bg-gray-200 transition-colors">
+                                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                                    d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                                    d="M19 11a7 7 0 01-14 0M12 18v3" />
                                 </svg>
-                              ) : (
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                                </svg>
-                              )}
-                            </button>
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1525,7 +1630,7 @@ function ActualiteDetailModal({ act, onClose }) {
   )
 }
 
-function DocumentCard({ doc }) {
+function DocumentCard({ doc, onTelecharger }) {
   return (
     <div className="bg-white rounded-xl border border-capedig-beige-dark p-5
                     text-center card-hover">
@@ -1540,9 +1645,8 @@ function DocumentCard({ doc }) {
         {doc.titre}
       </p>
       <p className="text-[11.5px] text-gray-400 mb-4">{doc.taille}</p>
-      <a
-        href={`/uploads/${doc.fichier}`}
-        target="_blank" rel="noreferrer"
+      <button
+        onClick={() => onTelecharger(doc)}
         className="flex items-center justify-center gap-1.5 w-full
                    border border-capedig-orange text-capedig-orange
                    py-2.5 rounded-lg text-[13px] font-semibold
@@ -1554,7 +1658,7 @@ function DocumentCard({ doc }) {
             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
         Télécharger
-      </a>
+      </button>
     </div>
   )
 }

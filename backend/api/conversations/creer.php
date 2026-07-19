@@ -57,23 +57,19 @@ try {
     $nomExp = trim(($auth['prenom'] ?? '') . ' ' . ($auth['nom'] ?? '')) ?: 'Un producteur';
     creerNotification($pdo, 'message', "Nouveau message de $nomExp : $sujet", '/admin/messages');
 
-    $q = $pdo->prepare("SELECT email FROM admin ORDER BY id ASC LIMIT 1");
-    $q->execute();
-    if ($adm = $q->fetch()) {
-        $extrait = mb_substr(strip_tags($contenu), 0, 200);
-        envoyerMail(
-            $adm['email'],
-            "Nouvelle conversation — $sujet",
-            "<p><strong>$nomExp</strong> a démarré une nouvelle conversation avec
-                l'administration :</p>
-             <p><strong>Sujet :</strong> $sujet</p>
-             <blockquote style=\"border-left:3px solid #D4641A;margin:14px 0;
-                padding:10px 16px;background:#FAF7F0;border-radius:0 6px 6px 0;\">$extrait</blockquote>
-             <p>Merci de prendre connaissance de ce message dans les meilleurs délais.</p>",
-            'NOUVEAU MESSAGE',
-            ['label' => 'Répondre au message', 'url' => siteUrl('/admin/messages')]
-        );
-    }
+    $extrait = mb_substr(strip_tags($contenu), 0, 200);
+    notifierTousLesAdmins(
+        $pdo,
+        "Nouvelle conversation — $sujet",
+        "<p><strong>$nomExp</strong> a démarré une nouvelle conversation avec
+            l'administration :</p>
+         <p><strong>Sujet :</strong> $sujet</p>
+         <blockquote style=\"border-left:3px solid #D4641A;margin:14px 0;
+            padding:10px 16px;background:#FAF7F0;border-radius:0 6px 6px 0;\">$extrait</blockquote>
+         <p>Merci de prendre connaissance de ce message dans les meilleurs délais.</p>",
+        'NOUVEAU MESSAGE',
+        ['label' => 'Répondre au message', 'url' => siteUrl('/admin/messages')]
+    );
 
     echo json_encode(['success' => true, 'conversation_id' => $convId]);
 } catch (PDOException $e) {

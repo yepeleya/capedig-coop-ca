@@ -30,13 +30,19 @@ export default function AdminHeader({ title = 'Tableau de bord' }) {
         setNotifications(data.notifications || [])
         setNonLues(data.non_lues || 0)
       })
-      .catch(() => {})
+      .catch(err => console.error('Chargement des notifications échoué :', err))
   }
 
   useEffect(() => {
     chargerNotifications()
     const interval = setInterval(chargerNotifications, 30000)
-    return () => clearInterval(interval)
+    // Rafraîchit immédiatement dès qu'un message est lu/envoyé ailleurs sur la page,
+    // au lieu d'attendre jusqu'à 30s pour que la cloche se mette à jour.
+    window.addEventListener('capedig:messages-updated', chargerNotifications)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('capedig:messages-updated', chargerNotifications)
+    }
   }, [])
 
   useEffect(() => {
@@ -57,8 +63,9 @@ export default function AdminHeader({ title = 'Tableau de bord' }) {
       await api.post('notifications/marquer_lu.php', {})
       setNotifications(prev => prev.map(n => ({ ...n, lu: 1 })))
       setNonLues(0)
-    } catch {
-      // silencieux : pas critique pour l'UX
+    } catch (err) {
+      // pas critique pour l'UX, mais on garde une trace pour le débogage
+      console.error('Marquage des notifications échoué :', err)
     }
   }
 

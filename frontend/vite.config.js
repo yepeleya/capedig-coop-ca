@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Cible du proxy WAMP — surchageable via VITE_DEV_API_HOST (.env local), sinon
+// IPv4 explicite en dev pour éviter le problème localhost→IPv6.
+const devApiHost = process.env.VITE_DEV_API_HOST || 'http://127.0.0.1'
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -15,13 +19,13 @@ export default defineConfig({
     // ── Proxy : redirige /api/* vers WAMP (PHP backend) ──────
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1',   // IPv4 explicite — évite le problème localhost→IPv6
+        target: devApiHost,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/Capedig-coop-ca/backend/api'),
         secure: false,
       },
       '/uploads': {
-        target: 'http://127.0.0.1',
+        target: devApiHost,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/uploads/, '/Capedig-coop-ca/backend/uploads'),
         secure: false,

@@ -4,6 +4,7 @@ import { useLockBodyScroll } from '../../hooks/useLockBodyScroll'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
 import RichTextEditor from '../../components/admin/RichTextEditor'
+import ConfirmDialog from '../../components/admin/ConfirmDialog'
 import { api } from '../../services/api'
 
 const CATEGORIES = ['cooperative', 'marche', 'technique', 'formation', 'logistique']
@@ -195,6 +196,7 @@ export default function Annonces() {
   const [modal, setModal] = useState(null)
   const [msgSuccess, setMsgSuccess] = useState('')
   const [msgError, setMsgError] = useState('')
+  const [aSupprimer, setASupprimer] = useState(null)
 
   const charger = () => {
     setLoading(true)
@@ -217,8 +219,11 @@ export default function Annonces() {
     charger()
   }
 
-  const handleDelete = async (a) => {
-    if (!confirm(`Supprimer l'annonce "${a.titre}" ?`)) return
+  const handleDelete = (a) => setASupprimer(a)
+
+  const confirmerSuppression = async () => {
+    const a = aSupprimer
+    setASupprimer(null)
     try {
       await api.del('annonces/supprimer.php', { id: a.id })
       flash(setMsgSuccess, 'Annonce supprimée.')
@@ -385,6 +390,16 @@ export default function Annonces() {
           onSave={handleSave}
         />
       )}
+
+      <ConfirmDialog
+        open={!!aSupprimer}
+        danger
+        title="Supprimer l'annonce"
+        message={aSupprimer ? `Supprimer l'annonce "${aSupprimer.titre}" ?` : ''}
+        confirmLabel="Supprimer"
+        onConfirm={confirmerSuppression}
+        onCancel={() => setASupprimer(null)}
+      />
     </div>
   )
 }
