@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import { useReveal } from '../../hooks/useReveal'
 import { isVideoFile, stripHtml } from '../../utils/richContent'
+import { IconNewspaper } from '../../components/icons/Icons'
 
 const TABS = [
   { id: 'tous',       label: 'Toutes les actualités'    },
@@ -311,7 +312,9 @@ export default function Actualites() {
             </div>
           ) : paginated.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-[60px] mb-4">📰</p>
+              <div className="flex justify-center mb-4 text-gray-300">
+                <IconNewspaper className="w-14 h-14" />
+              </div>
               <p className="text-[18px] font-bold text-gray-700 mb-2">
                 Aucune actualité dans cette catégorie
               </p>

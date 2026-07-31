@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import { useReveal } from '../../hooks/useReveal'
+import { IconCheckCircle } from '../../components/icons/Icons'
 
 const INFO_CARDS = [
   {
@@ -148,7 +149,9 @@ export default function Contact() {
 
             {sent ? (
               <div className="bg-capedig-vert/10 border border-capedig-vert rounded-xl p-6 text-center">
-                <p className="text-[36px] mb-3">✅</p>
+                <div className="flex justify-center mb-3 text-capedig-vert">
+                  <IconCheckCircle className="w-9 h-9" />
+                </div>
                 <p className="font-bold text-[17px] text-capedig-vert mb-2">
                   Message envoyé avec succès !
                 </p>

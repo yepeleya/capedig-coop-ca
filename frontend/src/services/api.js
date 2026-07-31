@@ -10,30 +10,41 @@ function buildUrl(path, params) {
   return query ? `${url}?${query}` : url
 }
 
-async function request(path, { method = 'GET', params, body, isFormData = false } = {}) {
+function buildHeaders(isFormData) {
   const token = localStorage.getItem('capedig_token')
   const headers = {}
   if (token) headers.Authorization = `Bearer ${token}`
   if (!isFormData) headers['Content-Type'] = 'application/json'
+  return headers
+}
 
+async function parseJson(res) {
+  try {
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+// Centralise la règle "qu'est-ce qu'une réponse en échec ?" : soit le statut
+// HTTP n'est pas ok, soit l'API renvoie explicitement { success: false }.
+// Un corps sans champ `success` (ex. une liste GET) n'est pas une erreur.
+function assertSuccess(res, data) {
+  const failed = !res.ok || (data && data.success === false)
+  if (!failed) return
+  const message = (data && (data.message || data.error)) || `Erreur ${res.status}`
+  throw new Error(message)
+}
+
+async function request(path, { method = 'GET', params, body, isFormData = false } = {}) {
   const res = await fetch(buildUrl(path, params), {
     method,
-    headers,
+    headers: buildHeaders(isFormData),
     body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
   })
 
-  let data = null
-  try {
-    data = await res.json()
-  } catch {
-    data = null
-  }
-
-  if (!res.ok || (data && data.success === false)) {
-    const message = (data && (data.message || data.error)) || `Erreur ${res.status}`
-    throw new Error(message)
-  }
-
+  const data = await parseJson(res)
+  assertSuccess(res, data)
   return data
 }
 

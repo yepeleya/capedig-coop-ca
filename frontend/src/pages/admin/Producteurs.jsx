@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
 import ConfirmDialog from '../../components/admin/ConfirmDialog'
+import { IconCheck, IconX, IconWarning } from '../../components/icons/Icons'
 import { api } from '../../services/api'
 
 const STATUT_LABEL = { actif: 'Actif', en_attente: 'En attente', suspendu: 'Suspendu' }
@@ -138,14 +139,16 @@ export default function Producteurs() {
 
           {msgSuccess && (
             <div className="bg-capedig-vert/10 border border-capedig-vert rounded-xl
-                            px-4 py-3 text-capedig-vert text-[13.5px] mb-5">
-              ✓ {msgSuccess}
+                            px-4 py-3 text-capedig-vert text-[13.5px] mb-5
+                            flex items-center gap-2">
+              <IconCheck className="w-4 h-4 flex-shrink-0" /> {msgSuccess}
             </div>
           )}
           {msgError && (
             <div className="bg-red-50 border border-red-300 rounded-xl
-                            px-4 py-3 text-red-600 text-[13.5px] mb-5">
-              ✗ {msgError}
+                            px-4 py-3 text-red-600 text-[13.5px] mb-5
+                            flex items-center gap-2">
+              <IconX className="w-4 h-4 flex-shrink-0" /> {msgError}
             </div>
           )}
 
@@ -216,11 +219,11 @@ export default function Producteurs() {
                           {p.statut === 'en_attente' && (
                             p.tel_verifie ? (
                               <span className="text-[10.5px] font-semibold text-capedig-vert flex items-center gap-1">
-                                ✓ Téléphone vérifié
+                                <IconCheck className="w-3 h-3 flex-shrink-0" /> Téléphone vérifié
                               </span>
                             ) : (
                               <span className="text-[10.5px] font-semibold text-amber-600 flex items-center gap-1">
-                                ⚠ Téléphone non vérifié
+                                <IconWarning className="w-3 h-3 flex-shrink-0" /> Téléphone non vérifié
                               </span>
                             )
                           )}

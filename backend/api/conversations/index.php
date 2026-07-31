@@ -31,7 +31,7 @@ try {
     if ($isAdmin) {
         $stmt = $pdo->prepare("
             SELECT
-                c.id, c.sujet, c.statut, c.prioritaire, c.updated_at, c.created_at,
+                c.id, c.sujet, c.statut, c.prioritaire, c.bloquee, c.updated_at, c.created_at,
                 p.nom          AS prd_nom,
                 p.prenom       AS prd_prenom,
                 p.code_producteur AS prd_code,
@@ -50,7 +50,7 @@ try {
     } else {
         $stmt = $pdo->prepare("
             SELECT
-                c.id, c.sujet, c.statut, c.prioritaire, c.updated_at, c.created_at,
+                c.id, c.sujet, c.statut, c.prioritaire, c.bloquee, c.updated_at, c.created_at,
                 (SELECT COUNT(*)
                  FROM message m
                  WHERE m.conversation_id = c.id
@@ -69,8 +69,9 @@ try {
 
     foreach ($conversations as &$c) {
         $c['non_lus'] = (int)$c['non_lus'];
-        if (!empty($c['dernier_audio'])) {
-            $c['dernier_message'] = '🎤 Note vocale';
+        $c['dernier_est_audio'] = !empty($c['dernier_audio']);
+        if ($c['dernier_est_audio']) {
+            $c['dernier_message'] = 'Note vocale';
         } else {
             $c['dernier_message'] = mb_substr(strip_tags($c['dernier_message'] ?? ''), 0, 80);
             if ($c['dernier_message'] && mb_strlen($c['dernier_message']) >= 80) {

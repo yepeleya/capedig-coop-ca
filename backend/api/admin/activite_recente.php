@@ -18,7 +18,7 @@ try {
                 CONCAT('Nouveau producteur inscrit : ', prenom, ' ', nom, ' (', section, ')') AS text,
                 TIMESTAMPDIFF(MINUTE, created_at, NOW()) AS minutes_ago,
                 CONCAT('Il y a ', TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' min') AS temps,
-                '👤' AS icon, '#22C55E' AS color
+                '#22C55E' AS color
          FROM producteur ORDER BY created_at DESC LIMIT 3"
     );
     foreach ($s->fetchAll() as $row) $items[] = $row;
@@ -29,7 +29,7 @@ try {
                 CONCAT('Annonce publiée : ', titre) AS text,
                 TIMESTAMPDIFF(MINUTE, created_at, NOW()) AS minutes_ago,
                 CONCAT('Il y a ', TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' min') AS temps,
-                '📢' AS icon, '#D4641A' AS color
+                '#D4641A' AS color
          FROM annonce WHERE statut = 'publiee' ORDER BY created_at DESC LIMIT 3"
     );
     foreach ($s->fetchAll() as $row) $items[] = $row;
@@ -40,7 +40,7 @@ try {
                 CONCAT('Nouveau message : ', sujet) AS text,
                 TIMESTAMPDIFF(MINUTE, created_at, NOW()) AS minutes_ago,
                 CONCAT('Il y a ', TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' min') AS temps,
-                '✉️' AS icon, '#3B82F6' AS color
+                '#3B82F6' AS color
          FROM message WHERE destinataire_type = 'admin' ORDER BY created_at DESC LIMIT 4"
     );
     foreach ($s->fetchAll() as $row) $items[] = $row;

@@ -20,6 +20,7 @@ import CertificationsCarousel from '../../components/CertificationsCarousel'
 import { useReveal } from '../../hooks/useReveal'
 import { useCounter } from '../../hooks/useCounter'
 import { isVideoFile, stripHtml } from '../../utils/richContent'
+import { IconCheck, IconTrendingUp } from '../../components/icons/Icons'
 
 // ── Données fallback (si API indisponible) ──────────────────
 const SERVICES_FALLBACK = [
@@ -331,7 +332,7 @@ export default function Accueil() {
               ),
               label: 'PRODUCTEURS', value: c3000, suffix: '+',
               note: '+5% cette année', noteColor: '#D4641A',
-              noteIcon: '↗',
+              noteIcon: <IconTrendingUp className="w-3.5 h-3.5" />,
             },
             {
               icon: (
@@ -342,7 +343,7 @@ export default function Accueil() {
               ),
               label: 'CERTIFICATIONS', value: c10, suffix: '+',
               note: 'Global G.A.P, Fairtrade', noteColor: '#D4641A',
-              noteIcon: '✓',
+              noteIcon: <IconCheck className="w-3.5 h-3.5" />,
             },
             {
               icon: (
@@ -353,7 +354,7 @@ export default function Accueil() {
               ),
               label: 'DURABILITÉ', value: c100, suffix: '%',
               note: 'Traçabilité complète', noteColor: '#2D6A4F',
-              noteIcon: '✓',
+              noteIcon: <IconCheck className="w-3.5 h-3.5" />,
             },
           ].map((stat, i) => (
             <div
@@ -376,7 +377,7 @@ export default function Accueil() {
                 className="text-[12.5px] font-medium flex items-center gap-1.5"
                 style={{ color: stat.noteColor }}
               >
-                <span className="font-bold">{stat.noteIcon}</span>
+                <span className="flex-shrink-0">{stat.noteIcon}</span>
                 {stat.note}
               </p>
             </div>

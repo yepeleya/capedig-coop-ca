@@ -6,7 +6,14 @@ import {
 import { useAuth } from '../../hooks/useAuth'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
+import { IconUsers, IconMegaphone, IconMail } from '../../components/icons/Icons'
 import { api } from '../../services/api'
+
+const ACTIVITE_ICONS = {
+  inscription: IconUsers,
+  annonce: IconMegaphone,
+  message: IconMail,
+}
 
 const REGION_COLORS = ['#3D2314', '#D4641A', '#2D6A4F', '#A0856A', '#EDE5DB', '#9CA3AF']
 
@@ -175,12 +182,18 @@ export default function Statistiques() {
                     {activite.length === 0 && (
                       <li className="py-3 text-[13.5px] text-gray-400">Aucune activité récente.</li>
                     )}
-                    {activite.map((a, i) => (
-                      <li key={i} className="py-3 flex items-center justify-between gap-3">
-                        <span className="text-[13.5px] text-gray-700">{a.icon} {a.text}</span>
-                        <span className="text-[12px] text-gray-400 flex-shrink-0">{a.temps}</span>
-                      </li>
-                    ))}
+                    {activite.map((a, i) => {
+                      const ActiviteIcon = ACTIVITE_ICONS[a.type] || IconMail
+                      return (
+                        <li key={i} className="py-3 flex items-center justify-between gap-3">
+                          <span className="text-[13.5px] text-gray-700 flex items-center gap-2">
+                            <ActiviteIcon className="w-4 h-4 flex-shrink-0" style={{ color: a.color }} />
+                            {a.text}
+                          </span>
+                          <span className="text-[12px] text-gray-400 flex-shrink-0">{a.temps}</span>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               </div>

@@ -4,6 +4,10 @@ import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import AdminHeader from '../../components/admin/AdminHeader'
 import ConfirmDialog from '../../components/admin/ConfirmDialog'
+import {
+  IconCheck, IconCheckDouble, IconX, IconMic, IconDotsVertical,
+  IconSearch, IconArchiveClose, IconEraser, IconLock, IconLockOpen, IconTrash,
+} from '../../components/icons/Icons'
 import { api } from '../../services/api'
 
 // ── helpers ───────────────────────────────────────────────────
@@ -43,6 +47,66 @@ function formatDuree(s) {
   return `${m}:${String(sec).padStart(2, '0')}`
 }
 
+// ── Menu "trois points" de la conversation (façon WhatsApp Desktop) ──
+function ConvMenu({ conv, onRechercher, onFermer, onEffacer, onBloquer, onSupprimer }) {
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [open])
+
+  const item = (icon, label, onClick, danger = false) => (
+    <button
+      onClick={() => { setOpen(false); onClick() }}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] font-medium
+                 text-left transition-colors
+                 ${danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-100'}`}
+    >
+      {icon}
+      {label}
+    </button>
+  )
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        title="Menu de la conversation"
+        className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500
+                   hover:bg-gray-100 transition-colors"
+      >
+        <IconDotsVertical className="w-5 h-5" />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 top-11 w-56 bg-white rounded-xl shadow-xl
+                     border border-gray-100 py-1.5 z-20"
+          style={{ animation: 'scaleIn 0.15s ease both' }}
+        >
+          {item(<IconSearch className="w-4 h-4 flex-shrink-0" />, 'Rechercher', onRechercher)}
+          {item(<IconArchiveClose className="w-4 h-4 flex-shrink-0" />, 'Fermer la discussion', onFermer)}
+          {item(<IconEraser className="w-4 h-4 flex-shrink-0" />, 'Effacer la discussion', onEffacer)}
+          {item(
+            conv.bloquee
+              ? <IconLockOpen className="w-4 h-4 flex-shrink-0" />
+              : <IconLock className="w-4 h-4 flex-shrink-0" />,
+            conv.bloquee ? 'Débloquer le producteur' : 'Bloquer le producteur',
+            onBloquer
+          )}
+          <div className="h-px bg-gray-100 my-1.5" />
+          {item(<IconTrash className="w-4 h-4 flex-shrink-0" />, 'Supprimer la discussion', onSupprimer, true)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Colonne gauche : item conversation ────────────────────────
 function ConvItem({ conv, selected, onClick }) {
   const nom = nomProducteur(conv)
@@ -74,8 +138,9 @@ function ConvItem({ conv, selected, onClick }) {
           {conv.sujet}
         </p>
         <div className="flex items-center justify-between">
-          <p className="text-[11.5px] text-gray-400 truncate">
-            {conv.dernier_expediteur === 'admin' && '✓ '}
+          <p className="text-[11.5px] text-gray-400 truncate flex items-center gap-1">
+            {conv.dernier_expediteur === 'admin' && <IconCheck className="w-3 h-3 flex-shrink-0" />}
+            {conv.dernier_est_audio && <IconMic className="w-3 h-3 flex-shrink-0" />}
             {conv.dernier_message || '—'}
           </p>
           {conv.non_lus > 0 && (
@@ -137,7 +202,9 @@ function Bubble({ msg, prdNom }) {
                          ${isAdminMsg ? 'text-white/70' : 'text-gray-400'}`}>
             {dateHeure(msg.created_at)}
             {isAdminMsg && (
-              <span className="ml-1">{msg.lu ? ' ✓✓' : ' ✓'}</span>
+              <span className="ml-1 inline-flex align-middle">
+                {msg.lu ? <IconCheckDouble className="w-3.5 h-3.5" /> : <IconCheck className="w-3.5 h-3.5" />}
+              </span>
             )}
           </p>
         </div>
@@ -168,7 +235,14 @@ export default function Messages() {
   const [reply,   setReply]   = useState('')
   const [sending, setSending] = useState(false)
   const [msgErr,  setMsgErr]  = useState('')
-  const [confirmCloture, setConfirmCloture] = useState(false)
+
+  // Confirmation générique pour les actions du menu "trois points"
+  // (fermer / effacer / bloquer / supprimer)
+  const [confirmAction, setConfirmAction] = useState(null)
+
+  // Recherche dans la conversation ouverte (façon WhatsApp Desktop)
+  const [chatSearchOpen,  setChatSearchOpen]  = useState(false)
+  const [chatSearchQuery, setChatSearchQuery] = useState('')
 
   const [listError, setListError] = useState('')
 
@@ -223,6 +297,8 @@ export default function Messages() {
     setSelectedConv(conv)
     setReply('')
     setMsgErr('')
+    setChatSearchOpen(false)
+    setChatSearchQuery('')
     chargerMessages(conv)
   }
 
@@ -307,7 +383,7 @@ export default function Messages() {
       }])
       setConversations(prev =>
         prev.map(c => c.id === selectedConv.id
-          ? { ...c, dernier_message: '🎤 Note vocale', dernier_expediteur: 'admin', updated_at: new Date().toISOString() }
+          ? { ...c, dernier_message: 'Note vocale', dernier_est_audio: true, dernier_expediteur: 'admin', updated_at: new Date().toISOString() }
           : c)
       )
       window.dispatchEvent(new Event('capedig:messages-updated'))
@@ -319,30 +395,81 @@ export default function Messages() {
   }
   const voice = useVoiceRecorder(handleAudioReady)
 
-  // Clôturer la conversation
-  const handleCloturer = () => {
-    if (!selectedConv) return
-    setConfirmCloture(true)
+  // ── Actions du menu "trois points" ─────────────────────────────
+  // Fermer la discussion = fermer le panneau de conversation (comme sur
+  // WhatsApp Web), pas une action serveur : le producteur garde la main.
+  const fermerPanneau = () => {
+    setSelectedConv(null)
+    setChatMessages([])
+    setChatSearchOpen(false)
+    setChatSearchQuery('')
   }
 
-  const confirmerCloture = async () => {
-    setConfirmCloture(false)
+  const demanderEffacer = () => setConfirmAction({
+    type: 'effacer',
+    title: 'Effacer la discussion',
+    message: 'Tous les messages de cette conversation seront définitivement supprimés. La conversation reste ouverte.',
+    confirmLabel: 'Effacer',
+    danger: true,
+  })
+
+  const demanderBloquer = () => setConfirmAction({
+    type: 'bloquer',
+    title: selectedConv?.bloquee ? 'Débloquer le producteur' : 'Bloquer le producteur',
+    message: selectedConv?.bloquee
+      ? 'Ce producteur pourra à nouveau envoyer des messages dans cette conversation.'
+      : 'Ce producteur ne pourra plus envoyer de messages dans cette conversation.',
+    confirmLabel: selectedConv?.bloquee ? 'Débloquer' : 'Bloquer',
+    danger: !selectedConv?.bloquee,
+  })
+
+  const demanderSupprimer = () => setConfirmAction({
+    type: 'supprimer',
+    title: 'Supprimer la discussion',
+    message: 'Cette conversation et tous ses messages seront définitivement supprimés. Cette action est irréversible.',
+    confirmLabel: 'Supprimer',
+    danger: true,
+  })
+
+  const executerAction = async () => {
+    if (!confirmAction || !selectedConv) { setConfirmAction(null); return }
+    const convId = selectedConv.id
+    const { type } = confirmAction
+    setConfirmAction(null)
     try {
-      await api.post('conversations/cloturer.php', { id: selectedConv.id })
-      setSelectedConv(prev => ({ ...prev, statut: 'close' }))
-      setConversations(prev =>
-        prev.map(c => c.id === selectedConv.id ? { ...c, statut: 'close' } : c)
-      )
+      if (type === 'effacer') {
+        await api.post('conversations/effacer.php', { id: convId })
+        setChatMessages([])
+        setConversations(prev =>
+          prev.map(c => c.id === convId ? { ...c, dernier_message: '', dernier_est_audio: false } : c)
+        )
+      } else if (type === 'bloquer') {
+        const nouveauStatut = !selectedConv.bloquee
+        await api.post('conversations/bloquer.php', { id: convId, bloque: nouveauStatut })
+        setSelectedConv(prev => ({ ...prev, bloquee: nouveauStatut }))
+        setConversations(prev => prev.map(c => c.id === convId ? { ...c, bloquee: nouveauStatut } : c))
+      } else if (type === 'supprimer') {
+        await api.post('conversations/supprimer.php', { id: convId })
+        setConversations(prev => prev.filter(c => c.id !== convId))
+        setSelectedConv(null)
+        setChatMessages([])
+      }
     } catch (e) {
       setMsgErr(e.message)
     }
   }
 
+  // Messages filtrés par la recherche dans la conversation ouverte
+  const messagesAffiches = chatSearchQuery.trim()
+    ? chatMessages.filter(m =>
+        (m.contenu || '').toLowerCase().includes(chatSearchQuery.trim().toLowerCase()))
+    : chatMessages
+
   // Filtrage
   const totalNonLus = conversations.reduce((s, c) => s + (c.non_lus || 0), 0)
   const filtrees = conversations.filter(c => {
     if (filter === 'Non lus'    && !c.non_lus)          return false
-    if (filter === 'Clôturées'  && c.statut !== 'close') return false
+    if (filter === 'Fermées'    && c.statut !== 'close') return false
     if (filter === 'Ouvertes'   && c.statut !== 'ouverte') return false
     if (search) {
       const q = search.toLowerCase()
@@ -381,7 +508,7 @@ export default function Messages() {
                            placeholder:text-gray-400 mb-2.5"
               />
               <div className="flex gap-1.5 flex-wrap">
-                {['Tous', 'Non lus', 'Ouvertes', 'Clôturées'].map(f => (
+                {['Tous', 'Non lus', 'Ouvertes', 'Fermées'].map(f => (
                   <button key={f} onClick={() => setFilter(f)}
                     className={`px-3 py-1 rounded-full text-[11.5px] font-semibold transition-colors
                                ${filter === f
@@ -429,14 +556,14 @@ export default function Messages() {
                 {/* Header conversation */}
                 <div className="bg-white px-6 py-4 border-b border-gray-200 flex items-center
                                 justify-between gap-4 flex-shrink-0">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center
-                                     text-white font-bold text-[15px]
+                                     text-white font-bold text-[15px] flex-shrink-0
                                      ${conv.statut === 'close' ? 'bg-gray-400' : 'bg-capedig-vert'}`}>
                       {nomProducteur(conv).charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="font-bold text-[15px] text-gray-900 leading-tight">
+                    <div className="min-w-0">
+                      <p className="font-bold text-[15px] text-gray-900 leading-tight truncate">
                         {nomProducteur(conv)}
                         {conv.prd_code && (
                           <span className="ml-2 text-[11px] font-semibold text-gray-400">
@@ -444,25 +571,53 @@ export default function Messages() {
                           </span>
                         )}
                       </p>
-                      <p className="text-[12px] text-gray-500">{conv.sujet}</p>
+                      <p className="text-[12px] text-gray-500 truncate">{conv.sujet}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {conv.statut === 'close' ? (
-                      <span className="px-3 py-1.5 rounded-xl text-[12px] font-bold
-                                       bg-gray-100 text-gray-500">
-                        Clôturée
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {!!conv.bloquee && (
+                      <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold
+                                       bg-red-50 text-red-500 flex items-center gap-1">
+                        <IconLock className="w-3 h-3 flex-shrink-0" /> Bloqué
                       </span>
-                    ) : (
-                      <button onClick={handleCloturer}
-                        className="px-3.5 py-2 rounded-xl border border-gray-200 text-[12.5px]
-                                   font-semibold text-gray-600 hover:bg-red-50 hover:text-red-500
-                                   hover:border-red-200 transition-colors">
-                        Clôturer
-                      </button>
                     )}
+                    {conv.statut === 'close' && (
+                      <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold
+                                       bg-gray-100 text-gray-500">
+                        Fermée
+                      </span>
+                    )}
+                    <ConvMenu
+                      conv={conv}
+                      onRechercher={() => setChatSearchOpen(v => !v)}
+                      onFermer={fermerPanneau}
+                      onEffacer={demanderEffacer}
+                      onBloquer={demanderBloquer}
+                      onSupprimer={demanderSupprimer}
+                    />
                   </div>
                 </div>
+
+                {/* Barre de recherche dans la discussion */}
+                {chatSearchOpen && (
+                  <div className="bg-white border-b border-gray-200 px-4 py-2.5 flex-shrink-0
+                                  flex items-center gap-2" style={{ animation: 'fadeIn 0.15s ease both' }}>
+                    <IconSearch className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <input
+                      autoFocus
+                      value={chatSearchQuery}
+                      onChange={e => setChatSearchQuery(e.target.value)}
+                      placeholder="Rechercher dans cette discussion…"
+                      className="flex-1 text-[13px] outline-none bg-transparent"
+                    />
+                    <button
+                      onClick={() => { setChatSearchOpen(false); setChatSearchQuery('') }}
+                      className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                    >
+                      <IconX className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Fil de messages */}
                 <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4">
@@ -474,9 +629,13 @@ export default function Messages() {
                     <div className="flex items-center justify-center h-full">
                       <p className="text-gray-400 text-[13.5px]">Aucun message dans cette conversation.</p>
                     </div>
+                  ) : messagesAffiches.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-400 text-[13.5px]">Aucun résultat pour cette recherche.</p>
+                    </div>
                   ) : (
                     <>
-                      {chatMessages.map(msg => (
+                      {messagesAffiches.map(msg => (
                         <Bubble key={msg.id} msg={msg} prdNom={nomProducteur(conv)} />
                       ))}
                       <div ref={chatEndRef} />
@@ -487,14 +646,18 @@ export default function Messages() {
                 {/* Zone de réponse */}
                 <div className="bg-white border-t border-gray-200 px-4 py-3 flex-shrink-0">
                   {msgErr && (
-                    <p className="text-red-500 text-[12.5px] mb-2">✗ {msgErr}</p>
+                    <p className="text-red-500 text-[12.5px] mb-2 flex items-center gap-1.5">
+                      <IconX className="w-3.5 h-3.5 flex-shrink-0" /> {msgErr}
+                    </p>
                   )}
                   {voice.erreur && (
-                    <p className="text-red-500 text-[12.5px] mb-2">✗ {voice.erreur}</p>
+                    <p className="text-red-500 text-[12.5px] mb-2 flex items-center gap-1.5">
+                      <IconX className="w-3.5 h-3.5 flex-shrink-0" /> {voice.erreur}
+                    </p>
                   )}
                   {conv.statut === 'close' ? (
                     <p className="text-center text-gray-400 text-[13px] py-2">
-                      Cette conversation est clôturée — impossible de répondre.
+                      Cette conversation est fermée — impossible de répondre.
                     </p>
                   ) : voice.recording ? (
                     <div className="flex items-center gap-3 bg-red-50 rounded-2xl px-4 py-3">
@@ -597,13 +760,13 @@ export default function Messages() {
       </div>
 
       <ConfirmDialog
-        open={confirmCloture}
-        danger
-        title="Clôturer la conversation"
-        message="Clôturer cette conversation ? Le producteur ne pourra plus y répondre."
-        confirmLabel="Clôturer"
-        onConfirm={confirmerCloture}
-        onCancel={() => setConfirmCloture(false)}
+        open={!!confirmAction}
+        danger={confirmAction?.danger}
+        title={confirmAction?.title}
+        message={confirmAction?.message}
+        confirmLabel={confirmAction?.confirmLabel}
+        onConfirm={executerAction}
+        onCancel={() => setConfirmAction(null)}
       />
     </div>
   )

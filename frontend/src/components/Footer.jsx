@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { IconCheck } from './icons/Icons'
 
 const NAV_LINKS = [
   { to: '/',           label: 'Accueil'    },
@@ -34,13 +35,13 @@ export default function Footer() {
         {/* Col 1 — Brand */}
         <div className="reveal delay-1">
           <Link to="/" className="flex items-center gap-3 mb-6 group w-fit">
-            <div className="w-12 h-12 bg-capedig-orange rounded-xl overflow-hidden
+            <div className="w-14 h-14 bg-capedig-orange rounded-xl overflow-hidden
                             flex items-center justify-center
                             transition-transform duration-300 group-hover:scale-110 shadow-md">
               <img
-                src="/logo/cape_logo_new.png"
+                src="/logo/logo_blanc.png"
                 alt="CAPEDIG"
-                className="w-14 h-14 object-contain"
+                className="w-16 h-16 object-contain"
               />
             </div>
             <span className="text-white font-bold text-[14.5px] tracking-wide leading-tight">
@@ -144,8 +145,10 @@ export default function Footer() {
           </p>
           {subSent ? (
             <div className="bg-capedig-vert/30 border border-capedig-vert
-                            text-white text-[13.5px] px-4 py-3 rounded-xl">
-              ✓ Inscription confirmée !
+                            text-white text-[13.5px] px-4 py-3 rounded-xl
+                            flex items-center gap-2">
+              <IconCheck className="w-4 h-4 flex-shrink-0" />
+              Inscription confirmée !
             </div>
           ) : (
             <form onSubmit={handleNewsletter} className="flex gap-2">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconCheck, IconX } from '../../components/icons/Icons'
 import { useAuth } from '../../hooks/useAuth'
 import { useAuthContext } from '../../context/AuthContext'
 import AdminSidebar from '../../components/admin/AdminSidebar'
@@ -132,11 +133,17 @@ export default function Parametres() {
 
           {msgSuccess && (
             <div className="bg-capedig-vert/10 border border-capedig-vert rounded-xl
-                            px-4 py-3 text-capedig-vert text-[13.5px] mb-5">✓ {msgSuccess}</div>
+                            px-4 py-3 text-capedig-vert text-[13.5px] mb-5
+                            flex items-center gap-2">
+              <IconCheck className="w-4 h-4 flex-shrink-0" /> {msgSuccess}
+            </div>
           )}
           {msgError && (
             <div className="bg-red-50 border border-red-300 rounded-xl
-                            px-4 py-3 text-red-600 text-[13.5px] mb-5">✗ {msgError}</div>
+                            px-4 py-3 text-red-600 text-[13.5px] mb-5
+                            flex items-center gap-2">
+              <IconX className="w-4 h-4 flex-shrink-0" /> {msgError}
+            </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">

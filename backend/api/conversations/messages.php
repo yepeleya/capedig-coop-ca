@@ -29,7 +29,7 @@ try {
 
     // Récupérer la conversation + infos producteur
     $stmtConv = $pdo->prepare("
-        SELECT c.id, c.sujet, c.statut, c.prioritaire, c.created_at, c.updated_at,
+        SELECT c.id, c.sujet, c.statut, c.prioritaire, c.bloquee, c.created_at, c.updated_at,
                p.nom AS prd_nom, p.prenom AS prd_prenom, p.code_producteur AS prd_code,
                p.id AS prd_id
         FROM conversation c

@@ -5,6 +5,7 @@ import EquipeDirigeants from '../../components/EquipeDirigeants'
 import { useReveal } from '../../hooks/useReveal'
 import { useCounter } from '../../hooks/useCounter'
 import { useEffect, useRef, useState } from 'react'
+import { IconUsers, IconTrendingUp, IconLeaf } from '../../components/icons/Icons'
 
 // Données statiques
 const TIMELINE = [
@@ -319,17 +320,17 @@ export default function APropos() {
               {
                 titre: 'Social',
                 desc: "Construction d'écoles et de centres de santé dans nos zones rurales d'activité.",
-                icon: '👥', color: '#D4641A',
+                icon: <IconUsers className="w-6 h-6" />, color: '#D4641A',
               },
               {
                 titre: 'Économique',
                 desc: 'Prime de qualité et fonds de soutien pour stabiliser le revenu des planteurs.',
-                icon: '📈', color: '#2D6A4F',
+                icon: <IconTrendingUp className="w-6 h-6" />, color: '#2D6A4F',
               },
               {
                 titre: 'Environnemental',
                 desc: "Objectif zéro déforestation et promotion de l'agroforesterie certifiée.",
-                icon: '🌿', color: '#D4641A',
+                icon: <IconLeaf className="w-6 h-6" />, color: '#D4641A',
               },
             ].map((eng, i) => (
               <div
@@ -337,8 +338,8 @@ export default function APropos() {
                 className={`flex gap-4 items-start reveal delay-${i + 1}`}
               >
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center
-                                flex-shrink-0 text-xl"
-                  style={{ background: `${eng.color}18` }}>
+                                flex-shrink-0"
+                  style={{ background: `${eng.color}18`, color: eng.color }}>
                   {eng.icon}
                 </div>
                 <div>

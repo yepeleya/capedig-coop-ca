@@ -175,11 +175,11 @@ export default function AdminSidebar() {
       {/* Logo */}
       <div className="px-5 pt-6 pb-5 border-b border-gray-100">
         <Link to="/admin/dashboard" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-capedig-orange rounded-xl overflow-hidden
+          <div className="w-12 h-12 bg-capedig-orange rounded-xl overflow-hidden
                           flex items-center justify-center flex-shrink-0
                           transition-transform duration-300 group-hover:scale-110">
-            <img src="/logo/cape_logo_new.png" alt="CAPEDIG"
-                 className="w-12 h-12 object-contain" />
+            <img src="/logo/logo_blanc.png" alt="CAPEDIG"
+                 className="w-14 h-14 object-contain" />
           </div>
           <div>
             <p className="font-bold text-[13px] text-gray-900 leading-tight">

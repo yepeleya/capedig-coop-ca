@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
+import { IconWarning, IconCheck, IconCheckCircle, IconPhone } from '../../components/icons/Icons'
 
 // ── Styles inputs réutilisables ────────────────────────────
 const inputWrap = `flex items-center gap-3 border border-capedig-beige-dark
@@ -125,7 +126,7 @@ function FormConnexion({ onSuccess }) {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3
                         text-red-700 text-[13.5px] flex items-start gap-2">
-          <span className="mt-0.5 flex-shrink-0">⚠</span>
+          <span className="mt-0.5 flex-shrink-0"><IconWarning className="w-4 h-4" /></span>
           {error}
         </div>
       )}
@@ -281,7 +282,9 @@ function FormInscription() {
   if (success && smsVerifie) {
     return (
       <div className="text-center py-8">
-        <div className="text-[56px] mb-4">✅</div>
+        <div className="flex justify-center mb-4 text-capedig-vert">
+          <IconCheckCircle className="w-14 h-14" />
+        </div>
         <h3 className="font-display text-[22px] font-bold text-gray-900 mb-3">
           Demande envoyée !
         </h3>
@@ -299,7 +302,9 @@ function FormInscription() {
     return (
       <div className="py-4">
         <div className="text-center mb-6">
-          <div className="text-[48px] mb-3">📱</div>
+          <div className="flex justify-center mb-3 text-capedig-orange">
+            <IconPhone className="w-12 h-12" />
+          </div>
           <h3 className="font-display text-[19px] font-bold text-gray-900 mb-2">
             Vérifiez votre numéro
           </h3>
@@ -325,11 +330,15 @@ function FormInscription() {
 
           {smsError && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3
-                            text-red-700 text-[13.5px]">⚠ {smsError}</div>
+                            text-red-700 text-[13.5px] flex items-center gap-2">
+              <IconWarning className="w-4 h-4 flex-shrink-0" /> {smsError}
+            </div>
           )}
           {renvoiOk && (
             <div className="bg-capedig-vert/10 border border-capedig-vert rounded-xl
-                            px-4 py-3 text-capedig-vert text-[13.5px]">✓ {renvoiOk}</div>
+                            px-4 py-3 text-capedig-vert text-[13.5px] flex items-center gap-2">
+              <IconCheck className="w-4 h-4 flex-shrink-0" /> {renvoiOk}
+            </div>
           )}
 
           <button type="submit" disabled={smsLoading || codeSms.length !== 6}
@@ -415,7 +424,9 @@ function FormInscription() {
       </div>
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3
-                        text-red-700 text-[13.5px]">⚠ {error}</div>
+                        text-red-700 text-[13.5px] flex items-center gap-2">
+          <IconWarning className="w-4 h-4 flex-shrink-0" /> {error}
+        </div>
       )}
       <button type="submit" disabled={loading}
         className="btn-shine w-full bg-capedig-orange text-white py-4 rounded-xl
@@ -465,10 +476,10 @@ export default function LoginProducteur() {
         <div className="relative z-10">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-14 h-14 bg-capedig-orange rounded-xl overflow-hidden
+            <div className="w-16 h-16 bg-capedig-orange rounded-xl overflow-hidden
                             flex items-center justify-center shadow-lg">
-              <img src="/logo/cape_logo_new.png" alt="CAPEDIG"
-                   className="w-16 h-16 object-contain" />
+              <img src="/logo/logo_blanc.png" alt="CAPEDIG"
+                   className="w-20 h-20 object-contain" />
             </div>
             <span className="text-white font-bold text-[16px] tracking-wide">
               CAPEDIG-COOP CA

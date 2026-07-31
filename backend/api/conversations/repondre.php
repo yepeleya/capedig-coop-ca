@@ -26,7 +26,7 @@ try {
     $pdo = getConnection();
 
     // Récupérer la conversation
-    $stmtConv = $pdo->prepare("SELECT id, sujet, producteur_id, statut FROM conversation WHERE id = ?");
+    $stmtConv = $pdo->prepare("SELECT id, sujet, producteur_id, statut, bloquee FROM conversation WHERE id = ?");
     $stmtConv->execute([$convId]);
     $conv = $stmtConv->fetch();
 
@@ -45,6 +45,13 @@ try {
     if ($auth['type'] === 'producteur' && (int)$conv['producteur_id'] !== (int)$auth['id']) {
         http_response_code(403);
         echo json_encode(['success' => false]);
+        exit;
+    }
+
+    // Un producteur bloqué ne peut plus écrire dans cette conversation
+    if ($auth['type'] === 'producteur' && !empty($conv['bloquee'])) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Vous avez été bloqué dans cette conversation']);
         exit;
     }
 

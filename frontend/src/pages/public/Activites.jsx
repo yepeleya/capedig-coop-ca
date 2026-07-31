@@ -5,6 +5,7 @@ import Footer from '../../components/Footer'
 import { useReveal } from '../../hooks/useReveal'
 import { useCounter } from '../../hooks/useCounter'
 import { useRef } from 'react'
+import { IconTractor, IconUsers, IconPin, IconSearch } from '../../components/icons/Icons'
 
 const CATEGORIES = [
   { id: 'tous',             label: 'Toutes les activités' },
@@ -186,9 +187,9 @@ export default function Activites() {
       <section ref={statsRef} className="bg-white py-10 px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
-            { val: c24,   suf: '',   label: 'Projets actifs',   icon: '🚜' },
-            { val: c1250, suf: '+',  label: 'Bénéficiaires',    icon: '👥' },
-            { val: c12,   suf: '',   label: 'Zones couvertes',  icon: '📍' },
+            { val: c24,   suf: '',   label: 'Projets actifs',   icon: <IconTractor className="w-9 h-9" /> },
+            { val: c1250, suf: '+',  label: 'Bénéficiaires',    icon: <IconUsers className="w-9 h-9" /> },
+            { val: c12,   suf: '',   label: 'Zones couvertes',  icon: <IconPin className="w-9 h-9" /> },
           ].map((s, i) => (
             <div
               key={i}
@@ -196,7 +197,7 @@ export default function Activites() {
                           reveal delay-${i + 1} hover:-translate-y-1
                           transition-all duration-300`}
             >
-              <span className="text-4xl">{s.icon}</span>
+              <span className="text-capedig-orange flex-shrink-0">{s.icon}</span>
               <div>
                 <p className="font-display text-[40px] font-bold text-capedig-orange leading-none">
                   {s.val.toLocaleString('fr-FR')}{s.suf}
@@ -256,7 +257,9 @@ export default function Activites() {
             </div>
           ) : paginated.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-[60px] mb-4">🔍</p>
+              <div className="flex justify-center mb-4 text-gray-300">
+                <IconSearch className="w-14 h-14" />
+              </div>
               <p className="text-[18px] font-bold text-gray-700 mb-2">Aucun projet trouvé</p>
               <p className="text-gray-500 text-[14.5px]">
                 Essayez un autre filtre ou une autre recherche.

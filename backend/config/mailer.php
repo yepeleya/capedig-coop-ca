@@ -111,7 +111,7 @@ function envoyerMail(
         // à une image jointe en CID, Gmail ne le détache jamais en pièce jointe
         // affichée en bas du message — c'est un vrai bloc HTML inline, fiable
         // sur tous les clients mail sans dépendre d'une URL publique.
-        $logoPath = __DIR__ . '/../../frontend/public/logo/cape_logo_new.png';
+        $logoPath = __DIR__ . '/../../frontend/public/logo/logo_couleur.png';
         $logoDataUri = null;
         if (file_exists($logoPath)) {
             $logoDataUri = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));

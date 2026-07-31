@@ -43,14 +43,14 @@ export default function Navbar() {
 
         {/* ─── LOGO ─── */}
         <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
-          <div className="w-14 h-14 bg-capedig-orange rounded-xl overflow-hidden
+          <div className="w-16 h-16 bg-capedig-orange rounded-xl overflow-hidden
                           flex items-center justify-center flex-shrink-0
                           transition-transform duration-300 group-hover:scale-110
                           shadow-md shadow-orange-900/25">
             <img
-              src="/logo/cape_logo_new.png"
+              src="/logo/logo_blanc.png"
               alt="CAPEDIG"
-              className="w-16 h-16 object-contain"
+              className="w-20 h-20 object-contain"
             />
           </div>
           <span className={`font-bold text-[14.5px] tracking-wide

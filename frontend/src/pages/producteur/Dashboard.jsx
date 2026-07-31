@@ -6,6 +6,7 @@ import { useAuthContext } from '../../context/AuthContext'
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
 import { api } from '../../services/api'
 import { stripHtml } from '../../utils/richContent'
+import { IconCheck, IconCheckDouble, IconX, IconMic, IconSend } from '../../components/icons/Icons'
 
 // ── Icônes de type fichier ────────────────────────────────
 const FILE_ICONS = {
@@ -514,7 +515,7 @@ export default function DashboardProducteur() {
       }])
       setConversations(prev => prev.map(c =>
         c.id === selectedConv.id
-          ? { ...c, dernier_message: '🎤 Note vocale', dernier_expediteur: 'producteur', updated_at: new Date().toISOString() }
+          ? { ...c, dernier_message: 'Note vocale', dernier_est_audio: true, dernier_expediteur: 'producteur', updated_at: new Date().toISOString() }
           : c
       ))
     } catch (e) {
@@ -591,10 +592,10 @@ export default function DashboardProducteur() {
                         border-capedig-beige-dark flex flex-col z-40">
         <div className="px-5 pt-6 pb-4 border-b border-capedig-beige-dark">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-10 h-10 bg-capedig-orange rounded-lg overflow-hidden
+            <div className="w-12 h-12 bg-capedig-orange rounded-lg overflow-hidden
                             flex items-center justify-center flex-shrink-0">
-              <img src="/logo/cape_logo_new.png" alt="CAPEDIG"
-                   className="w-12 h-12 object-contain" />
+              <img src="/logo/logo_blanc.png" alt="CAPEDIG"
+                   className="w-14 h-14 object-contain" />
             </div>
             <span className="font-display font-bold text-[13px] text-gray-900 leading-tight">
               CAPEDIG-COOP CA
@@ -884,9 +885,10 @@ export default function DashboardProducteur() {
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <p className={`text-[11.5px] truncate
+                            <p className={`text-[11.5px] truncate flex items-center gap-1
                                           ${conv.non_lus > 0 ? 'font-semibold text-capedig-orange' : 'text-gray-400'}`}>
                               {conv.dernier_expediteur === 'producteur' && '→ '}
+                              {conv.dernier_est_audio && <IconMic className="w-3 h-3 flex-shrink-0" />}
                               {conv.dernier_message || '—'}
                             </p>
                             <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
@@ -973,8 +975,9 @@ export default function DashboardProducteur() {
                             <button type="submit" disabled={newSending}
                               className="btn-shine flex-1 bg-capedig-orange text-white py-3 rounded-xl
                                          font-bold text-[14px] disabled:opacity-60
-                                         hover:bg-capedig-orange-light transition-colors">
-                              {newSending ? 'Envoi…' : 'Envoyer ➤'}
+                                         hover:bg-capedig-orange-light transition-colors
+                                         flex items-center justify-center gap-1.5">
+                              {newSending ? 'Envoi…' : (<>Envoyer <IconSend className="w-4 h-4" /></>)}
                             </button>
                           </div>
                         </form>
@@ -1056,7 +1059,11 @@ export default function DashboardProducteur() {
                                 <p className={`text-[10.5px] mt-1 text-right
                                                ${isMine ? 'text-white/70' : 'text-gray-400'}`}>
                                   {dateHeure(msg.created_at)}
-                                  {isMine && <span className="ml-1">{msg.lu ? ' ✓✓' : ' ✓'}</span>}
+                                  {isMine && (
+                                    <span className="ml-1 inline-flex align-middle">
+                                      {msg.lu ? <IconCheckDouble className="w-3.5 h-3.5" /> : <IconCheck className="w-3.5 h-3.5" />}
+                                    </span>
+                                  )}
                                 </p>
                               </div>
                               {isMine && (
@@ -1075,7 +1082,9 @@ export default function DashboardProducteur() {
                       {/* Zone de réponse */}
                       <div className="bg-white border-t border-capedig-beige-dark px-4 py-3 flex-shrink-0">
                         {(replyErr || voice.erreur) && (
-                          <p className="text-red-500 text-[12px] mb-2">✗ {replyErr || voice.erreur}</p>
+                          <p className="text-red-500 text-[12px] mb-2 flex items-center gap-1.5">
+                            <IconX className="w-3.5 h-3.5 flex-shrink-0" /> {replyErr || voice.erreur}
+                          </p>
                         )}
                         {selectedConv.statut === 'close' ? (
                           <p className="text-center text-gray-400 text-[13px] py-2">
@@ -1360,14 +1369,16 @@ export default function DashboardProducteur() {
 
                   {profilOk && (
                     <div className="bg-capedig-vert/10 border border-capedig-vert rounded-xl
-                                    px-4 py-3 text-capedig-vert text-[13px] mb-4">
-                      ✓ {profilOk}
+                                    px-4 py-3 text-capedig-vert text-[13px] mb-4
+                                    flex items-center gap-2">
+                      <IconCheck className="w-4 h-4 flex-shrink-0" /> {profilOk}
                     </div>
                   )}
                   {profilErr && (
                     <div className="bg-red-50 border border-red-300 rounded-xl
-                                    px-4 py-3 text-red-600 text-[13px] mb-4">
-                      ✗ {profilErr}
+                                    px-4 py-3 text-red-600 text-[13px] mb-4
+                                    flex items-center gap-2">
+                      <IconX className="w-4 h-4 flex-shrink-0" /> {profilErr}
                     </div>
                   )}
 
@@ -1450,14 +1461,16 @@ export default function DashboardProducteur() {
 
                   {mdpOk && (
                     <div className="bg-capedig-vert/10 border border-capedig-vert rounded-xl
-                                    px-4 py-3 text-capedig-vert text-[13px] mb-4">
-                      ✓ {mdpOk}
+                                    px-4 py-3 text-capedig-vert text-[13px] mb-4
+                                    flex items-center gap-2">
+                      <IconCheck className="w-4 h-4 flex-shrink-0" /> {mdpOk}
                     </div>
                   )}
                   {mdpErr && (
                     <div className="bg-red-50 border border-red-300 rounded-xl
-                                    px-4 py-3 text-red-600 text-[13px] mb-4">
-                      ✗ {mdpErr}
+                                    px-4 py-3 text-red-600 text-[13px] mb-4
+                                    flex items-center gap-2">
+                      <IconX className="w-4 h-4 flex-shrink-0" /> {mdpErr}
                     </div>
                   )}
 
@@ -1496,9 +1509,9 @@ export default function DashboardProducteur() {
         <footer className="bg-capedig-brun px-8 py-5
                            flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-capedig-orange rounded-md overflow-hidden
+            <div className="w-9 h-9 bg-capedig-orange rounded-md overflow-hidden
                             flex items-center justify-center">
-              <img src="/logo/cape_logo_new.png" alt="" className="w-8 h-8 object-contain" />
+              <img src="/logo/logo_blanc.png" alt="" className="w-10 h-10 object-contain" />
             </div>
             <span className="text-white font-bold text-[13px]">CAPEDIG-COOP CA</span>
           </div>

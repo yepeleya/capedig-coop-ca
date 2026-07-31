@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
+import { IconWarning } from '../../components/icons/Icons'
 
 export default function LoginAdmin() {
   const [email,     setEmail]     = useState('')
@@ -80,12 +81,12 @@ export default function LoginAdmin() {
         <div className="relative z-10 text-center px-12">
           {/* Logo dans cercle blanc */}
           <div
-            className="w-24 h-24 rounded-full bg-white/95 flex items-center
+            className="w-28 h-28 rounded-full bg-white/95 flex items-center
                        justify-center mx-auto mb-8 shadow-2xl overflow-hidden"
             style={{ animation: 'scaleIn 0.7s ease 0.2s both', opacity: 0 }}
           >
-            <img src="/logo/cape_logo_new.png" alt="CAPEDIG"
-                 className="w-16 h-16 object-contain" />
+            <img src="/logo/logo_couleur.png" alt="CAPEDIG"
+                 className="w-20 h-20 object-contain" />
           </div>
 
           <h1
@@ -211,7 +212,7 @@ export default function LoginAdmin() {
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3
                               text-red-700 text-[13.5px] flex items-start gap-2">
-                <span className="flex-shrink-0">⚠</span> {error}
+                <span className="flex-shrink-0"><IconWarning className="w-4 h-4" /></span> {error}
               </div>
             )}
 
