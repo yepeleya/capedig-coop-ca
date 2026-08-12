@@ -35,6 +35,13 @@ function normaliserNumeroCI(string $tel): ?string
  */
 function obtenirJetonOrange(string $clientId, string $clientSecret): ?string
 {
+    // Le portail Orange affiche parfois directement la valeur d'en-tête
+    // "Basic xxxxx" (client_id:client_secret déjà encodés en base64) à la
+    // place du secret brut. On accepte les deux formats.
+    $autorisation = str_starts_with($clientSecret, 'Basic ')
+        ? $clientSecret
+        : 'Basic ' . base64_encode("$clientId:$clientSecret");
+
     $ch = curl_init('https://api.orange.com/oauth/v3/token');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -46,7 +53,7 @@ function obtenirJetonOrange(string $clientId, string $clientSecret): ?string
         CURLOPT_CAINFO         => __DIR__ . '/cacert.pem',
         CURLOPT_POST           => true,
         CURLOPT_HTTPHEADER     => [
-            'Authorization: Basic ' . base64_encode("$clientId:$clientSecret"),
+            "Authorization: $autorisation",
             'Content-Type: application/x-www-form-urlencoded',
         ],
         CURLOPT_POSTFIELDS     => 'grant_type=client_credentials',
