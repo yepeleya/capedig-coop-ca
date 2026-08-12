@@ -27,7 +27,7 @@ if (!$email || strlen($mdp) < 1) {
 try {
     $pdo  = getConnection();
     $stmt = $pdo->prepare(
-        "SELECT id, nom, prenom, email, mot_de_passe, role, statut
+        "SELECT id, nom, prenom, email, mot_de_passe, role, statut, photo
          FROM admin
          WHERE email = ?
          LIMIT 1"
@@ -81,6 +81,7 @@ try {
             'prenom' => $admin['prenom'],
             'email'  => $admin['email'],
             'role'   => $admin['role'],
+            'photo'  => $admin['photo'] ?: null,
         ],
     ]);
 

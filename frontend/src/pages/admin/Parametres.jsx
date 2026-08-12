@@ -30,12 +30,24 @@ export default function Parametres() {
     api.get('admin/get_profil.php').then(setProfil).catch(() => {})
   }, [])
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setProfil(prev => ({ ...prev, photo: reader.result }))
+    reader.readAsDataURL(file)
+  }
+
   const handleSaveProfil = async (e) => {
     e.preventDefault()
     try {
-      await api.post('admin/update_profil.php', profil)
+      const res = await api.post('admin/update_profil.php', profil)
       flash(setMsgSuccess, 'Profil mis à jour avec succès.')
-      login(token, { ...user, nom: profil.nom, prenom: profil.prenom, email: profil.email })
+      // On garde l'URL renvoyée par le serveur (pas le base64 brut) pour
+      // éviter de stocker une image entière dans localStorage.
+      const photoUrl = res.photo || profil.photo
+      setProfil(prev => ({ ...prev, photo: photoUrl }))
+      login(token, { ...user, nom: profil.nom, prenom: profil.prenom, email: profil.email, photo: photoUrl })
     } catch (err) {
       flash(setMsgError, err.message)
     }
@@ -178,6 +190,21 @@ export default function Parametres() {
               {section === 'profil' && (
                 <form onSubmit={handleSaveProfil} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
                   <h3 className="font-bold text-[15px] text-gray-900 mb-2">Gestion du profil</h3>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-capedig-orange flex items-center
+                                    justify-center text-white font-bold text-[22px] overflow-hidden
+                                    flex-shrink-0">
+                      {profil.photo
+                        ? <img src={profil.photo} alt="" className="w-full h-full object-cover" />
+                        : (profil.nom || 'A').charAt(0).toUpperCase()}
+                    </div>
+                    <label className="px-4 py-2 rounded-xl border border-gray-200 text-[13px]
+                                      font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer">
+                      Changer la photo
+                      <input type="file" accept="image/jpeg,image/png,image/webp"
+                        onChange={handlePhotoChange} className="hidden" />
+                    </label>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Nom</label>

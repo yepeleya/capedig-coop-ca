@@ -264,7 +264,7 @@ function formatDuree(s) {
 // ════════════════════════════════════════════════════════════
 export default function DashboardProducteur() {
   const { user } = useAuth('/login-producteur')
-  const { logout } = useAuthContext()
+  const { logout, login, token } = useAuthContext()
   const navigate = useNavigate()
 
   const [activePage, setActivePage] = useState('dashboard')
@@ -347,6 +347,10 @@ export default function DashboardProducteur() {
         if (res.photo_url) setProfilPhotoUrl(res.photo_url)
         setProfilPhoto(null)
         chargerProfil()
+        // Synchronise l'avatar affiché dans la barre du haut (AuthContext),
+        // sinon il reste bloqué sur l'initiale jusqu'à la prochaine connexion.
+        // res.photo_url est toujours présent (null si la photo a été supprimée).
+        login(token, { ...user, nom: profilEdit.nom, prenom: profilEdit.prenom, photo: res.photo_url })
       }
     } catch (e) {
       setProfilErr(e.message || 'Erreur lors de la mise à jour')

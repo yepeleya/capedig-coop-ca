@@ -22,18 +22,25 @@ if (!$nom) {
     echo json_encode(['success' => false, 'message' => 'Le nom est requis']);
     exit;
 }
+if (!$email) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Email invalide']);
+    exit;
+}
 
 // Sauvegarde une photo base64 sur disque ; conserve l'URL si déjà servie
+// (dossier backend/uploads/, le même que celui déjà servi par le proxy Vite
+// et par Apache — même convention que producteurs/update_profil.php).
 $photoPath = null;
 if ($photo && str_starts_with($photo, 'data:image/')) {
     $parts   = explode(',', $photo);
     $imgData = base64_decode($parts[1] ?? '');
     if ($imgData) {
-        $dir = __DIR__ . '/../../../uploads/avatars/';
+        $dir = __DIR__ . '/../../uploads/';
         if (!is_dir($dir)) mkdir($dir, 0755, true);
         $filename = 'admin_' . $auth['id'] . '_' . time() . '.jpg';
         file_put_contents($dir . $filename, $imgData);
-        $photoPath = '/uploads/avatars/' . $filename;
+        $photoPath = '/uploads/' . $filename;
     }
 } elseif ($photo && str_starts_with($photo, '/uploads/')) {
     $photoPath = $photo;
@@ -43,10 +50,10 @@ try {
     $pdo = getConnection();
     if ($photoPath) {
         $pdo->prepare("UPDATE admin SET nom = ?, prenom = ?, email = ?, tel_admin = ?, photo = ? WHERE id = ?")
-            ->execute([$nom, $prenom, $email ?: $data['email'], $tel, $photoPath, $auth['id']]);
+            ->execute([$nom, $prenom, $email, $tel, $photoPath, $auth['id']]);
     } else {
         $pdo->prepare("UPDATE admin SET nom = ?, prenom = ?, email = ?, tel_admin = ? WHERE id = ?")
-            ->execute([$nom, $prenom, $email ?: $data['email'], $tel, $auth['id']]);
+            ->execute([$nom, $prenom, $email, $tel, $auth['id']]);
     }
     echo json_encode(['success' => true, 'photo' => $photoPath]);
 } catch (PDOException $e) {

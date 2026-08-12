@@ -25,7 +25,7 @@ try {
     // Accepte email OU code_producteur
     $stmt = $pdo->prepare(
         "SELECT id, code_producteur, nom, prenom, email, mot_de_passe,
-                statut, section, localisation
+                statut, section, localisation, photo
          FROM producteur
          WHERE email = ? OR code_producteur = ?
          LIMIT 1"
@@ -73,6 +73,7 @@ try {
             'statut'          => $prd['statut'],
             'section'         => $prd['section'],
             'localisation'    => $prd['localisation'],
+            'photo'           => $prd['photo'] ? '/uploads/' . $prd['photo'] : null,
         ],
     ]);
 

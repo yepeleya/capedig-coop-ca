@@ -158,8 +158,11 @@ export default function AdminHeader({ title = 'Tableau de bord' }) {
             </p>
           </div>
           <div className="w-10 h-10 rounded-full bg-capedig-orange flex items-center
-                          justify-center text-white font-bold text-[14px] flex-shrink-0">
-            {initial}
+                          justify-center text-white font-bold text-[14px] flex-shrink-0
+                          overflow-hidden">
+            {user?.photo
+              ? <img src={user.photo} alt={user?.nom || 'Admin'} className="w-full h-full object-cover" />
+              : initial}
           </div>
         </div>
       </div>
