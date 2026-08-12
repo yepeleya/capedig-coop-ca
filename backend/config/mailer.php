@@ -111,7 +111,10 @@ function envoyerMail(
         // à une image jointe en CID, Gmail ne le détache jamais en pièce jointe
         // affichée en bas du message — c'est un vrai bloc HTML inline, fiable
         // sur tous les clients mail sans dépendre d'une URL publique.
-        $logoPath = __DIR__ . '/../../frontend/public/logo/logo_couleur.png';
+        // On utilise une version compacte (96x96, ~7 Ko) et non le PNG source
+        // (1000x1000, ~360 Ko) : encodé en base64 ce dernier dépasse le seuil
+        // de troncature de Gmail (~102 Ko) et coupe le reste de l'e-mail.
+        $logoPath = __DIR__ . '/../../frontend/public/logo/logo_email.png';
         $logoDataUri = null;
         if (file_exists($logoPath)) {
             $logoDataUri = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
